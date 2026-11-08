@@ -25,10 +25,12 @@ namespace SkiGame
         [Range(0f, 1f)] public float airAccelerationFactor = 0.3f;
 
         [Header("Steering")]
-        [Tooltip("Heading angle (degrees from straight downhill) at full steer.")]
+        [Tooltip("Heading angle relative to the track direction at full steer (degrees).")]
         [Range(10f, 80f)] public float maxHeadingAngle = 48f;
         [Tooltip("How fast the heading can change (degrees / second).")]
         public float turnRate = 170f;
+        [Tooltip("How fast the heading returns to 'parallel to the track' when steering is released (degrees / second). High = you stop sliding sideways right where you are.")]
+        public float straightenRate = 600f;
         [Tooltip("Steering authority while airborne (0..1).")]
         [Range(0f, 1f)] public float airSteerFactor = 0.5f;
         [Tooltip("How quickly the body aligns to the ground normal.")]

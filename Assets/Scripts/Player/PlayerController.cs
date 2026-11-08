@@ -223,9 +223,16 @@ namespace SkiGame
         private void UpdateHeadingAndMove(ref Vector3 pos, float dt)
         {
             float authority = grounded ? 1f : settings.airSteerFactor;
-            float targetYaw = steerValue * settings.maxHeadingAngle;
-            if (IsStunned) targetYaw = slope.GetPathYaw(pos.z); // drift along the path while stunned
-            yaw = Mathf.MoveTowards(yaw, targetYaw, settings.turnRate * authority * dt);
+            // Steering is RELATIVE TO THE TRACK: with no input the skier runs parallel to the
+            // winding path and keeps exactly the lateral position it has reached.
+            float pathYaw = slope.GetPathYaw(pos.z);
+            float targetYaw = pathYaw + steerValue * settings.maxHeadingAngle;
+            if (IsStunned) targetYaw = pathYaw; // drift along the path while stunned
+            // Turning back toward "parallel to the track" uses the (fast) straighten rate,
+            // so releasing the key stops the sideways motion almost immediately.
+            bool straightening = Mathf.Abs(Mathf.DeltaAngle(pathYaw, targetYaw)) < Mathf.Abs(Mathf.DeltaAngle(pathYaw, yaw));
+            float rate = straightening ? settings.straightenRate : settings.turnRate * authority;
+            yaw = Mathf.MoveTowards(yaw, targetYaw, rate * dt);
 
             // Soft boundary: on the banks you slow down and get turned back toward the path.
             float lateral = slope.LateralOffset(pos);
@@ -234,7 +241,7 @@ namespace SkiGame
             {
                 float t = Mathf.Clamp01(over / Mathf.Max(0.01f, slope.BankWidth));
                 Speed = Mathf.Max(settings.minSpeed, Speed - settings.bankFriction * t * dt);
-                yaw = Mathf.MoveTowards(yaw, -Mathf.Sign(lateral) * settings.maxHeadingAngle, settings.bankPushTurnRate * t * dt);
+                yaw = Mathf.MoveTowards(yaw, pathYaw - Mathf.Sign(lateral) * settings.maxHeadingAngle, settings.bankPushTurnRate * t * dt);
             }
 
             float rad = yaw * Mathf.Deg2Rad;

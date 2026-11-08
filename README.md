@@ -27,7 +27,7 @@ tuning in `Assets/Settings` is kept).
 ### Controls (keyboard)
 | Key | Action |
 |---|---|
-| **A / D** or **← / →** | Steer left / right |
+| **A / D** or **← / →** | Steer left / right (relative to the track: let go and you ride parallel to the track, keeping your line) |
 | **W / S** or **↑ / ↓** | Speed up (tuck) / slow down (brake) |
 | **Space** | Jump |
 | **F** | Backflip — works any time you are airborne (normal jump or ramp) |

@@ -19,6 +19,8 @@ namespace SkiGame
         [Header("Analog response (smoothing)")]
         [Tooltip("Seconds for Steer to move from 0 to full deflection. 0 = instant.")]
         [SerializeField, Min(0f)] private float steerResponseTime = 0.12f;
+        [Tooltip("Seconds for Steer to return from full deflection to 0 when the input is released. Short = the skier stops sliding sideways quickly.")]
+        [SerializeField, Min(0f)] private float steerReleaseTime = 0.04f;
         [Tooltip("Seconds for SpeedControl to move from 0 to full. 0 = instant.")]
         [SerializeField, Min(0f)] private float speedResponseTime = 0.25f;
         [Tooltip("Raw values smaller than this are treated as 0 (removes sensor noise / jitter).")]
@@ -64,7 +66,9 @@ namespace SkiGame
             // Analog channels: clamp -> dead zone -> smooth ramp.
             RawSteer = ApplyDeadZone(Mathf.Clamp(ReadSteer(), -1f, 1f), steerDeadZone);
             RawSpeedControl = ApplyDeadZone(Mathf.Clamp(ReadSpeedControl(), -1f, 1f), speedDeadZone);
-            Steer = Approach(Steer, RawSteer, steerResponseTime, dt);
+            // Releasing (moving toward 0 or reversing) uses the shorter release time.
+            bool releasing = Mathf.Abs(RawSteer) < Mathf.Abs(Steer) || RawSteer * Steer < 0f;
+            Steer = Approach(Steer, RawSteer, releasing ? steerReleaseTime : steerResponseTime, dt);
             SpeedControl = Approach(SpeedControl, RawSpeedControl, speedResponseTime, dt);
 
             // Discrete channels: rising edge + cooldown => single-frame trigger.
