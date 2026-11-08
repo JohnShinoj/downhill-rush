@@ -27,7 +27,7 @@ tuning in `Assets/Settings` is kept).
 ### Controls (keyboard)
 | Key | Action |
 |---|---|
-| **A / D** or **← / →** | Steer left / right (relative to the track: let go and you ride parallel to the track, keeping your line) |
+| **A / D** or **← / →** | Turn left / right gradually (hold to keep turning, let go to keep your current direction) |
 | **W / S** or **↑ / ↓** | Speed up (tuck) / slow down (brake) |
 | **Space** | Jump |
 | **F** | Backflip — works any time you are airborne (normal jump or ramp) |
@@ -304,3 +304,23 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
   the arc and the actual trajectory drift apart (coins have a generous pickup radius).
 * Fixed: obstacles were briefly at the world origin when spawned (physics not yet synced),
   which could cost a life right at the start of a run ("Hit a pine tree").
+
+---
+
+## Changelog
+
+### v2.0
+* **Gradual steering:** the steer input sets the turn *rate* (`SkierSettings.steerTurnRate`,
+  default 55 deg/s). Holding right keeps turning right; letting go keeps the current
+  direction (no automatic track-following). The heading is limited to `maxHeadingAngle`
+  (60 deg) from straight downhill, and the soft side banks still push you back.
+* **Ramp jumps capped:** jumping on a ramp, or right after leaving one, adds only
+  `rampJumpBonus` (3 m/s) on top of the ramp launch instead of a full extra jump.
+
+### v1.x
+* Ramps launch reliably at any frame rate (launch is frame-based; ground snap is capped).
+* Performance: decoration in each slope chunk is merged into a few meshes, GPU instancing,
+  2 shadow cascades, 2x MSAA. In the editor, set the Game view to 1920x1080 for best FPS.
+  Tick `PlayerController > Log Airtime` to print every take-off / landing to the Console.
+* Fixed: obstacles were briefly at the world origin when spawned, which could cost a life
+  right at the start of a run.
