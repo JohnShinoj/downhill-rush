@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99899b22ea4aa2c42b0390f5c58136bf, type: 3}
+  m_Name: VisualSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SkiGame.VisualSettings
+  sunColor: {r: 1, g: 0.84, b: 0.64, a: 1}
+  sunIntensity: 1.15
+  sunElevation: 16
+  sunHeading: 168
+  shadowStrength: 0.82
+  fillColor: {r: 0.62, g: 0.74, b: 1, a: 1}
+  fillIntensity: 0.28
+  fillElevation: 32
+  fillHeading: -12
+  proceduralSky: 1
+  skyTint: {r: 0.42, g: 0.56, b: 0.82, a: 1}
+  skyGroundColor: {r: 0.62, g: 0.66, b: 0.74, a: 1}
+  atmosphereThickness: 0.8
+  skyExposure: 0.95
+  sunDiscSize: 0.035
+  flatSkyColor: {r: 0.62, g: 0.76, b: 0.95, a: 1}
+  ambientSky: {r: 0.42, g: 0.52, b: 0.76, a: 1}
+  ambientEquator: {r: 0.6, g: 0.6, b: 0.66, a: 1}
+  ambientGround: {r: 0.33, g: 0.38, b: 0.5, a: 1}
+  fog: 1
+  fogColor: {r: 0.74, g: 0.82, b: 0.94, a: 1}
+  fogStart: 75
+  fogEnd: 270
+  shadowDistance: 90
+  shadowCascades: 2
+  msaa: 2
+  mountains: 1
+  mountainCount: 22
+  mountainRadius: {x: 750, y: 1100}
+  mountainHeight: {x: 130, y: 280}
+  mountainDrop: 170
+  mountainRock: {r: 0.24, g: 0.27, b: 0.36, a: 1}
+  mountainRockHigh: {r: 0.34, g: 0.36, b: 0.46, a: 1}
+  mountainSnow: {r: 0.97, g: 0.97, b: 1, a: 1}
+  mountainSnowLine: 0.34
+  mountainHaze: 0.2
+  snowfallRate: 160
+  snowWind: {x: 1.2, y: 0, z: -0.6}
+  customSky: 1
+  skyZenith: {r: 0.09, g: 0.25, b: 0.58, a: 1}
+  skyMid: {r: 0.33, g: 0.54, b: 0.86, a: 1}
+  skyHorizon: {r: 0.74, g: 0.82, b: 0.94, a: 1}
+  skyHorizonSun: {r: 1, g: 0.74, b: 0.52, a: 1}
+  skySunColor: {r: 1, g: 0.88, b: 0.68, a: 1}
+  skySunSize: 0.03
+  skyHaloIntensity: 0.45
+  skyCirrus: 0.4
+  nearHaze: 0.08
+  farHaze: 0.5
+  mountainSunLit: {r: 1.15, g: 0.95, b: 0.78, a: 1}
+  mountainShadow: {r: 0.4, g: 0.5, b: 0.78, a: 1}
+  mountainAlpenglow: {r: 1, g: 0.72, b: 0.66, a: 1}
+  clouds: 1
+  cloudCount: 16
+  cloudRadius: 1050
+  cloudHeight: {x: 110, y: 300}
+  cloudWidth: {x: 320, y: 620}
+  cloudOpacity: 0.85
