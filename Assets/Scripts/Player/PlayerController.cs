@@ -37,6 +37,7 @@ namespace SkiGame
         [SerializeField] private bool logAirtime = false;
         private float airStartTime;
         private bool onRampLastFrame;
+        private bool airFromRamp;
 
         // ------------------------------------------------------------------ public state
         public IGameInput InputSource => input;
@@ -223,16 +224,20 @@ namespace SkiGame
         private void UpdateHeadingAndMove(ref Vector3 pos, float dt)
         {
             float authority = grounded ? 1f : settings.airSteerFactor;
-            // Steering is RELATIVE TO THE TRACK: with no input the skier runs parallel to the
-            // winding path and keeps exactly the lateral position it has reached.
             float pathYaw = slope.GetPathYaw(pos.z);
-            float targetYaw = pathYaw + steerValue * settings.maxHeadingAngle;
-            if (IsStunned) targetYaw = pathYaw; // drift along the path while stunned
-            // Turning back toward "parallel to the track" uses the (fast) straighten rate,
-            // so releasing the key stops the sideways motion almost immediately.
-            bool straightening = Mathf.Abs(Mathf.DeltaAngle(pathYaw, targetYaw)) < Mathf.Abs(Mathf.DeltaAngle(pathYaw, yaw));
-            float rate = straightening ? settings.straightenRate : settings.turnRate * authority;
-            yaw = Mathf.MoveTowards(yaw, targetYaw, rate * dt);
+            if (IsStunned)
+            {
+                // After a crash the skier is straightened out along the track.
+                yaw = Mathf.MoveTowards(yaw, pathYaw, settings.turnRate * dt);
+            }
+            else
+            {
+                // GRADUAL STEERING: input sets the TURN RATE, not the heading.
+                // Hold right -> keep turning right; let go -> keep the current heading.
+                yaw += steerValue * settings.steerTurnRate * authority * dt;
+            }
+            // Never ski sideways or uphill: limit the heading relative to straight downhill.
+            yaw = Mathf.Clamp(yaw, -settings.maxHeadingAngle, settings.maxHeadingAngle);
 
             // Soft boundary: on the banks you slow down and get turned back toward the path.
             float lateral = slope.LateralOffset(pos);
@@ -338,6 +343,7 @@ namespace SkiGame
             jumpedThisAir = false;
             flipsThisAir = 0;
             pendingAirPoints = 0;
+            airFromRamp = launchRamp != null;
             float groundVelocity = verticalVelocity;
             if (launchRamp != null) verticalVelocity = Mathf.Max(verticalVelocity, launchRamp.LaunchVelocity);
             verticalVelocity = Mathf.Clamp(verticalVelocity, -10f, 30f);
@@ -370,8 +376,15 @@ namespace SkiGame
 
         private void DoJump()
         {
+            // On a ramp (or just after leaving one) the jump only adds a small bonus on top
+            // of the ramp launch, instead of stacking a full jump on it.
+            bool rampContext = (grounded && onRampLastFrame) || (!grounded && airFromRamp);
+            float rampLaunch = lastRamp != null ? lastRamp.LaunchVelocity : 0f;
             if (grounded) LeaveGround(null);
-            verticalVelocity = Mathf.Max(verticalVelocity, 0f) + settings.jumpVelocity;
+            if (rampContext)
+                verticalVelocity = Mathf.Max(Mathf.Max(verticalVelocity, 0f), Mathf.Max(rampLaunch, settings.jumpVelocity)) + settings.rampJumpBonus;
+            else
+                verticalVelocity = Mathf.Max(verticalVelocity, 0f) + settings.jumpVelocity;
             jumpedThisAir = true;
             lastJumpPressTime = -999f;
             lastGroundedTime = -999f;

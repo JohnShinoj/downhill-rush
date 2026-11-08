@@ -25,12 +25,12 @@ namespace SkiGame
         [Range(0f, 1f)] public float airAccelerationFactor = 0.3f;
 
         [Header("Steering")]
-        [Tooltip("Heading angle relative to the track direction at full steer (degrees).")]
-        [Range(10f, 80f)] public float maxHeadingAngle = 48f;
-        [Tooltip("How fast the heading can change (degrees / second).")]
+        [Tooltip("Maximum heading away from straight downhill (degrees). Keeps the skier from going sideways/uphill.")]
+        [Range(10f, 85f)] public float maxHeadingAngle = 60f;
+        [Tooltip("How fast the skier turns while steering is held at full (degrees / second). Lower = less sensitive.")]
+        public float steerTurnRate = 55f;
+        [Tooltip("How fast the heading recovers after a crash (degrees / second).")]
         public float turnRate = 170f;
-        [Tooltip("How fast the heading returns to 'parallel to the track' when steering is released (degrees / second). High = you stop sliding sideways right where you are.")]
-        public float straightenRate = 600f;
         [Tooltip("Steering authority while airborne (0..1).")]
         [Range(0f, 1f)] public float airSteerFactor = 0.5f;
         [Tooltip("How quickly the body aligns to the ground normal.")]
@@ -47,6 +47,8 @@ namespace SkiGame
         [Header("Jump")]
         [Tooltip("Upward launch speed (m/s). Airtime = 2 * jumpVelocity / gravity.")]
         public float jumpVelocity = 10f;
+        [Tooltip("Extra upward speed when jumping ON a ramp (or right after leaving one). Small = ramp jumps don't go sky-high.")]
+        public float rampJumpBonus = 3f;
         [Tooltip("Gravity (m/s²). Higher than real gravity for a snappy, arcade feel.")]
         public float gravity = 25f;
 

@@ -20,7 +20,8 @@ MonoBehaviour:
   brakeDeceleration: 14
   carveDrag: 1.5
   airAccelerationFactor: 0.3
-  maxHeadingAngle: 48
+  maxHeadingAngle: 60
+  steerTurnRate: 55
   turnRate: 170
   airSteerFactor: 0.5
   alignSharpness: 12
@@ -28,6 +29,7 @@ MonoBehaviour:
   bankPushTurnRate: 110
   hardBoundaryFraction: 0.85
   jumpVelocity: 10
+  rampJumpBonus: 3
   gravity: 25
   flipDuration: 0.62
   landingAngleTolerance: 55
