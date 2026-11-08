@@ -9,6 +9,8 @@ Centre-of-Pressure** (steering, speed) input — is a small, self-contained chan
 
 ---
 
+> **Controls reference:** see [CONTROLS.md](CONTROLS.md) for steering math, all timing/delay values, and how EMG and the Wii Balance Board map onto the controls.
+
 ## 1. How to open, run and play
 
 ### Open
