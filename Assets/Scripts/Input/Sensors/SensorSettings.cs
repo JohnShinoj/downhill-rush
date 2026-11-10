@@ -44,8 +44,8 @@ namespace SkiGame.Sensors
         public int liveColumnY = 5;
         [Tooltip("Column with the total weight in kg (used to detect 'nobody on the board'). -1 = none.")]
         public int liveColumnWeight = 6;
-        [Tooltip("Flip left/right. The professor's script draws -X, i.e. +X in WiiMote1_All.txt = LEFT, so this is on for the live file.")]
-        public bool liveInvertX = true;
+        [Tooltip("Flip left/right for the live file. Tested on the board: +X in WiiMote1_All.txt = RIGHT, so this is off.")]
+        public bool liveInvertX = false;
         [Tooltip("Flip forward/back for the live file.")]
         public bool liveInvertY = false;
         [Tooltip("Flip left/right for the recorded (Recorder) files. Off: +CpX = right in John14-16.")]

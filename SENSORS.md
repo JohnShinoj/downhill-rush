@@ -159,7 +159,7 @@ raw COP X, Y (cm), weight (kg)
 - `WiiMote1_All.txt` is opened with **read access only**, sharing read/write/delete with the program writing it. The game never writes, renames or locks it.
 - Reading starts at the **end** of the file, so the 886 MB of history is skipped. Each frame only the newly added bytes are read, about 85 lines/s × ~75 bytes ≈ 6 KB/s.
 - If the file is restarted or truncated, the reader starts again from the beginning. If the game falls more than 256 KB behind, it jumps close to the end.
-- **Left/right sign:** your professor's script draws the ball at −X, so +X in the live file means **left**. `liveInvertX` is therefore on. This has not been checked with someone on the board yet; see section 6.
+- **Left/right sign:** checked on the real board: +X in the live file means **right**, so `liveInvertX` is off.
 
 ---
 
@@ -221,7 +221,7 @@ The game's 0.12 s coyote time and 0.13 s input buffer cover most of the EMG dela
 
 ## 6. Still to confirm with someone on the board
 
-1. **Live COP direction.** Open F2 and lean right: Steer should go **+**. If it goes −, untick `Live Invert X`. Lean forward: Speed should go **+**. If it goes −, tick `Live Invert Y`.
+1. **Live COP direction.** Left/right was checked on the board (`Live Invert X` off). Lean forward: Speed should go **+**. If it goes −, tick `Live Invert Y`.
 2. **Live COP scale.** If a comfortable lean doesn't reach ±1, lower `Steer Full Scale Cm`. The live software may use a different cm scale from the Recorder.
 3. **EMG units.** The kit multiplies the SDK values by 1000 (V → mV), as in `john_final.json`. Calibration (F4) makes the game independent of the exact scale anyway.
 
