@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkiGame.SkierSettings
   startSpeed: 14
   minSpeed: 8
-  maxSpeed: 34
+  maxSpeed: 22.22
   downhillAcceleration: 1.6
   boostAcceleration: 8
   brakeDeceleration: 14

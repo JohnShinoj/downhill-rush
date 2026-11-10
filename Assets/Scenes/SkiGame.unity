@@ -950,21 +950,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 1855723936}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5dc64c27853222d4fb76f57d32932324, type: 3}
+  m_Script: {fileID: 11500000, guid: bddd8fb8277dcee4586f6080a3d4941b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SkiGame.KeyboardInput
+  m_EditorClassIdentifier: Assembly-CSharp::SkiGame.BiosignalInput
   steerResponseTime: 0.12
   speedResponseTime: 0.25
   steerDeadZone: 0.05
   speedDeadZone: 0.05
   jumpCooldown: 0.25
   backflipCooldown: 0.3
-  steerLeftKeys: 6100000014010000i
-  steerRightKeys: 6400000013010000i
-  speedUpKeys: 7700000011010000i
-  slowDownKeys: 7300000012010000i
-  jumpKeys: 20000000i
-  backflipKeys: 66000000i
+  emgFile: john_final.csv
+  forearmColumn: 2
+  jumpOn: 0.04
+  jumpOff: 0.02
+  restBefore: 0.12
+  clipAfter: 0.9
+  flexKey: 32
+  showPlot: 1
+  plotKey: 283
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
