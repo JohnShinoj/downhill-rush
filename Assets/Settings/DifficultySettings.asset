@@ -42,4 +42,4 @@ MonoBehaviour:
   rowSpacingJitter: 0.25
   maxSwervePerRowEasy: 1
   maxSwervePerRowHard: 3
-  maxSpeedMultiplierAtMax: 1.2
+  maxSpeedMultiplierAtMax: 1

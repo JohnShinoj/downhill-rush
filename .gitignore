@@ -19,3 +19,4 @@ Thumbs.db
 # Personal physiological recordings stay local (public repo)
 /SensorData/
 /Data/
+*.slnx
