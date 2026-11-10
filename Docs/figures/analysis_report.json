@@ -1,6 +1,6 @@
 {
   "emg": {
-    "Jump (ch1, FCU)": {
+    "Jump (ch1, forearm)": {
       "power_fraction": {
         "<20 Hz (artefact)": 32.2,
         "20-450 Hz (EMG)": 67.7
@@ -11,25 +11,25 @@
         "150 Hz": 1.52
       },
       "median_frequency_hz": 82.763671875,
-      "calibration_rest_mv": 0.00466564269445485,
-      "calibration_max_mv": 0.23319506287809674,
-      "on_threshold": 0.3,
-      "off_threshold": 0.15,
+      "calibration_rest_mv": 0.004888024280776029,
+      "calibration_max_mv": 0.2287768091458317,
+      "on_threshold": 0.15,
+      "off_threshold": 0.08,
       "test_after_calibration": {
         "true": 49,
         "detected": 49,
         "missed": 0,
         "false": 0,
-        "latency_after_onset_ms": 89.53061224489795,
-        "before_peak_ms": 107.08163265306122
+        "latency_after_onset_ms": 30.959183673469386,
+        "before_peak_ms": 165.6530612244898
       },
       "whole_file": {
         "true": 63,
         "detected": 63,
         "missed": 0,
         "false": 0,
-        "latency_after_onset_ms": 88.0,
-        "before_peak_ms": 104.73015873015873
+        "latency_after_onset_ms": 29.428571428571427,
+        "before_peak_ms": 163.3015873015873
       }
     },
     "Backflip (ch2, biceps)": {
@@ -43,28 +43,28 @@
         "150 Hz": 1.58
       },
       "median_frequency_hz": 56.884765625,
-      "calibration_rest_mv": 0.003699391330878553,
-      "calibration_max_mv": 0.5880491838636771,
+      "calibration_rest_mv": 0.00359491880916824,
+      "calibration_max_mv": 0.5662496032952877,
       "on_threshold": 0.4,
-      "off_threshold": 0.15,
+      "off_threshold": 0.1,
       "test_after_calibration": {
         "true": 42,
         "detected": 42,
         "missed": 0,
-        "false": 2,
-        "latency_after_onset_ms": 158.76190476190476,
-        "before_peak_ms": 110.88095238095238
+        "false": 0,
+        "latency_after_onset_ms": 158.97619047619048,
+        "before_peak_ms": 110.66666666666667
       },
       "whole_file": {
         "true": 57,
         "detected": 57,
         "missed": 0,
-        "false": 2,
-        "latency_after_onset_ms": 158.91228070175438,
-        "before_peak_ms": 94.28070175438596
+        "false": 0,
+        "latency_after_onset_ms": 158.57894736842104,
+        "before_peak_ms": 94.6140350877193
       }
     },
-    "envelope_group_delay_ms_at_1Hz": 28.561608355143626
+    "envelope_group_delay_ms_at_1Hz": 46.73801843667287
   },
   "cop": {
     "John14.txt": {

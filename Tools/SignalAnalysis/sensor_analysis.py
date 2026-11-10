@@ -25,7 +25,7 @@ def rbj(kind, fs, f0, q):
 BW4 = (0.54119610, 1.30656296)
 BW2 = 0.70710678
 
-def emg_envelope(x, fs, hp=20, lp=450, notch=50, notch_q=30, env=8):
+def emg_envelope(x, fs, hp=20, lp=450, notch=50, notch_q=30, env=5):
     """Causal: BW4 high-pass -> BW4 low-pass -> notch -> |x| -> BW2 low-pass."""
     sos = [rbj("hp", fs, hp, q) for q in BW4] + [rbj("lp", fs, lp, q) for q in BW4]
     if notch: sos.append(rbj("notch", fs, notch, notch_q))
@@ -72,10 +72,10 @@ def group_delay_ms(b, a, fs, f=1.0):
 # ---------------------------------------------------------------- EMG
 def analyse_emg(path, out, fs=1000.0, cal_s=30.0):
     d = pd.read_csv(path)
-    chans = {"Jump (ch1, FCU)": (d["ch1_mv"].values, 0.30), "Backflip (ch2, biceps)": (d["ch2_mv"].values, 0.40)}
+    chans = {"Jump (ch1, forearm)": (d["ch1_mv"].values, 0.15, 0.08), "Backflip (ch2, biceps)": (d["ch2_mv"].values, 0.40, 0.10)}
     report = {}
     fig, ax = plt.subplots(len(chans) + 1, 1, figsize=(14, 10))
-    for k, (name, (x, on)) in enumerate(chans.items()):
+    for k, (name, (x, on, off)) in enumerate(chans.items()):
         f, P = signal.welch(x - x.mean(), fs, nperseg=4096)
         tot = P.sum()
         bands = {"<20 Hz (artefact)": P[f < 20].sum() / tot, "20-450 Hz (EMG)": P[(f >= 20) & (f <= 450)].sum() / tot}
@@ -88,7 +88,7 @@ def analyse_emg(path, out, fs=1000.0, cal_s=30.0):
         n_cal = int(cal_s * fs)
         lo, hi = np.percentile(env[:n_cal], 10), np.percentile(env[:n_cal], 99)
         nrm = (env - lo) / (hi - lo)
-        active, ev = hysteresis(nrm, on, 0.15, int(0.030 * fs))
+        active, ev = hysteresis(nrm, on, off, int(0.020 * fs))
         pk, ons, ref = reference_bursts(x, fs)
         sel = pk > n_cal
         sc = score(ev[ev > n_cal], pk[sel], ons[sel], fs)
@@ -98,13 +98,13 @@ def analyse_emg(path, out, fs=1000.0, cal_s=30.0):
         report[name] = dict(power_fraction={k2: round(float(v) * 100, 1) for k2, v in bands.items()},
                             mains_line_to_neighbour_ratio={k2: round(v, 2) for k2, v in mains.items()},
                             median_frequency_hz=float(mf), calibration_rest_mv=float(lo), calibration_max_mv=float(hi),
-                            on_threshold=on, off_threshold=0.15,
+                            on_threshold=on, off_threshold=off,
                             test_after_calibration=sc, whole_file=sc_all)
         t = np.arange(len(x)) / fs
         s = (t > 40) & (t < 52)
         a = ax[k]
         a.plot(t[s], nrm[s], lw=1, label="causal envelope (normalised)")
-        a.axhline(on, ls="--", c="k", lw=0.8, label=f"ON {on}"); a.axhline(0.15, ls=":", c="k", lw=0.8, label="OFF 0.15")
+        a.axhline(on, ls="--", c="k", lw=0.8, label=f"ON {on}"); a.axhline(off, ls=":", c="k", lw=0.8, label=f"OFF {off}")
         a.fill_between(t[s], 0, active[s] * 1.05, color="orange", alpha=0.25, label="active")
         for p in pk[(pk > 40 * fs) & (pk < 52 * fs)]: a.axvline(p / fs, c="g", lw=0.6)
         a.set_title(f"{name}: envelope vs thresholds (green = contraction peaks)"); a.set_ylim(-0.1, 1.6); a.legend(loc="upper right", fontsize=8)
@@ -117,11 +117,11 @@ def analyse_emg(path, out, fs=1000.0, cal_s=30.0):
     sos = [rbj("hp", fs, 20, q) for q in BW4] + [rbj("lp", fs, 450, q) for q in BW4] + [rbj("notch", fs, 50, 30)]
     w = np.linspace(1, 499, 2000); H = np.ones_like(w, complex)
     for b, a in sos: H *= signal.freqz(b, a, worN=w, fs=fs)[1]
-    be, ae = rbj("lp", fs, 8, BW2)
+    be, ae = rbj("lp", fs, 5, BW2)
     He = signal.freqz(be, ae, worN=w, fs=fs)[1]
     fig, ax = plt.subplots(1, 2, figsize=(13, 4))
     ax[0].semilogx(w, 20 * np.log10(np.abs(H) + 1e-12)); ax[0].set_title("EMG band-pass 20-450 Hz + 50 Hz notch"); ax[0].set_ylim(-60, 5); ax[0].grid(True, which="both")
-    ax[1].semilogx(w, 20 * np.log10(np.abs(He) + 1e-12)); ax[1].set_title("EMG envelope low-pass 8 Hz"); ax[1].set_ylim(-60, 5); ax[1].grid(True, which="both")
+    ax[1].semilogx(w, 20 * np.log10(np.abs(He) + 1e-12)); ax[1].set_title("EMG envelope low-pass 5 Hz"); ax[1].set_ylim(-60, 5); ax[1].grid(True, which="both")
     for a in ax: a.set_xlabel("Hz"); a.set_ylabel("dB")
     plt.tight_layout(); plt.savefig(os.path.join(out, "emg_filters.png"), dpi=90); plt.close()
     report["envelope_group_delay_ms_at_1Hz"] = group_delay_ms(be, ae, fs)

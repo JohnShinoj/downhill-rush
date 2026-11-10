@@ -26,6 +26,7 @@ namespace SkiGame.Sensors
         private void Update()
         {
             if (sensor == null) { sensor = GetComponent<SensorInput>(); if (sensor == null) return; }
+            if (sensor.Settings == null || sensor.Cop == null || sensor.Emg == null) return;
             sampleTimer += Time.unscaledDeltaTime;
             while (sampleTimer >= HistoryInterval)
             {
@@ -40,19 +41,25 @@ namespace SkiGame.Sensors
 
         private void OnGUI()
         {
-            if (sensor == null || sensor.Settings == null) return;
+            if (sensor == null || sensor.Settings == null || sensor.Cop == null || sensor.Emg == null) return;
             Event e = Event.current;
             if (e != null && e.type == EventType.KeyDown && e.keyCode == sensor.Settings.debugPanelKey) { visible = !visible; e.Use(); }
-            if (!visible) return;
 
             if (label == null)
             {
                 label = HudDrawing.MakeLabel(17, Color.white);
                 small = HudDrawing.MakeLabel(14, new Color(1f, 1f, 1f, 0.75f));
                 header = HudDrawing.MakeLabel(19, new Color(0.45f, 0.9f, 1f), TextAnchor.UpperLeft, FontStyle.Bold);
+                status = HudDrawing.MakeLabel(15, Color.white);
+                big = HudDrawing.MakeLabel(54, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
+                medium = HudDrawing.MakeLabel(26, new Color(1f, 1f, 1f, 0.9f), TextAnchor.MiddleCenter);
             }
 
             Matrix4x4 old = HudDrawing.BeginCanvas();
+            DrawStatusLine();
+            DrawGuides();
+            if (!visible) { GUI.matrix = old; return; }
+
             float w = 470, x = 20, y = 330;
             HudDrawing.Panel(new Rect(x, y, w, 560), new Color(0.02f, 0.04f, 0.1f, 0.8f));
             float cx = x + 14, cy = y + 8, iw = w - 28;
@@ -61,7 +68,7 @@ namespace SkiGame.Sensors
             var emg = sensor.Emg;
             var s = sensor.Settings;
 
-            GUI.Label(new Rect(cx, cy, iw, 24), $"SENSORS  ({s.debugPanelKey} hide · {s.recalibrateCopKey} zero COP · {s.recalibrateEmgKey} cal EMG)", header); cy += 26;
+            GUI.Label(new Rect(cx, cy, iw, 24), $"SENSORS - {(sensor.IsLiveProfile ? "LIVE" : "REPLAY")}  ({s.debugPanelKey} hide)", header); cy += 26;
 
             // ---- COP
             GUI.Label(new Rect(cx, cy, iw, 22), "COP: " + sensor.CopStatus, small); cy += 20;
@@ -108,6 +115,50 @@ namespace SkiGame.Sensors
             GUI.Label(new Rect(plot.x + 4, plot.yMax + 2, iw, 20), "last 6 s:  steer  speed  (centre = 0)    jump  backflip  (bottom = rest, dashes = ON)", small);
 
             GUI.matrix = old;
+        }
+
+        private GUIStyle status, big, medium;
+
+        /// <summary>Always-visible one-line status at the bottom-left of the screen.</summary>
+        private void DrawStatusLine()
+        {
+            var s = sensor.Settings;
+            float vw = HudDrawing.VirtualWidth, y = HudDrawing.ReferenceHeight - 84f;
+            string Dot(bool ok) => ok ? "<color=#5CFF8A>●</color>" : "<color=#FF6B6B>●</color>";
+            string emg = !sensor.EmgRunning ? "EMG off" : $"EMG {Dot(sensor.EmgReceiving)} {(s.emgSource == SignalSource.LiveBridge ? "bridge" : s.emgSource == SignalSource.Replay ? "replay" : "file")}";
+            string cop = !sensor.CopRunning ? "COP off" : $"COP {Dot(sensor.CopReceiving && (sensor.Cop.PersonOnBoard || s.copSource == SignalSource.Replay))} {(s.copSource == SignalSource.Replay ? "replay" : "board")}";
+            string warn = sensor.EmgRunning && !sensor.EmgCalibratedForPlayer ? "   <color=#FFD25C>EMG not calibrated - press F4</color>" : "";
+            string text = $"<b>{(sensor.IsLiveProfile ? "LIVE" : "REPLAY")}</b>   {emg}   {cop}{warn}     <color=#FFFFFFAA>F2 sensors · F3 zero board · F4 calibrate EMG · F6 {(sensor.IsLiveProfile ? "replay" : "live")}</color>";
+            status.richText = true;
+            HudDrawing.Panel(new Rect(14, y - 6, Mathf.Min(vw - 28, 1020), 32), new Color(0f, 0f, 0f, 0.45f));
+            GUI.Label(new Rect(24, y, vw - 40, 24), text, status);
+        }
+
+        /// <summary>Big centred instructions: guided EMG calibration and "stand still" for the board.</summary>
+        private void DrawGuides()
+        {
+            float vw = HudDrawing.VirtualWidth, vh = HudDrawing.ReferenceHeight;
+            string title = null, sub = null;
+            switch (sensor.CalPhase)
+            {
+                case SensorInput.CalibrationPhase.Relax:
+                    title = "RELAX BOTH ARMS"; sub = $"measuring rest level...  {Mathf.CeilToInt(sensor.CalPhaseRemaining)}"; break;
+                case SensorInput.CalibrationPhase.FlexJump:
+                    title = "FLEX FOREARM  (JUMP)"; sub = $"squeeze hard 3 times  ·  {Mathf.CeilToInt(sensor.CalPhaseRemaining)}"; break;
+                case SensorInput.CalibrationPhase.FlexBackflip:
+                    title = "FLEX BICEPS  (BACKFLIP)"; sub = $"curl hard 3 times  ·  {Mathf.CeilToInt(sensor.CalPhaseRemaining)}"; break;
+                case SensorInput.CalibrationPhase.Done:
+                    title = "EMG CALIBRATION"; sub = sensor.CalMessage; break;
+            }
+            var cop = sensor.Cop;
+            if (title == null && sensor.CopRunning && sensor.Settings.copSource == SignalSource.LiveFile && cop.PersonOnBoard && !cop.HasNeutral)
+            {
+                title = "STAND STILL"; sub = $"finding your centre on the board  {cop.NeutralProgress * 100f:0}%";
+            }
+            if (title == null) return;
+            HudDrawing.Panel(new Rect(vw * 0.5f - 420, vh * 0.30f, 840, 170), new Color(0.02f, 0.04f, 0.1f, 0.82f));
+            GUI.Label(new Rect(vw * 0.5f - 420, vh * 0.30f + 18, 840, 80), title, big);
+            GUI.Label(new Rect(vw * 0.5f - 420, vh * 0.30f + 100, 840, 50), sub, medium);
         }
 
         private void Analog(ref float cy, float cx, string name, float value, Color color)

@@ -4,8 +4,18 @@ A complete, endless downhill skiing prototype built **only from Unity primitives
 code-generated meshes/materials** (no external assets). Steer down a winding slope, dodge
 obstacles, jump logs and crevasses, launch off ramps, do backflips for **x2 coins**.
 
-The game is built so that the next step — **EMG** (jump, backflip) and **Wii Balance Board
-Centre-of-Pressure** (steering, speed) input — is a small, self-contained change.
+**v5: played with the body.** Squeeze the forearm to jump and curl the biceps to backflip
+(BioRadio **EMG**). Lean on a **Wii Balance Board** to steer and change speed (centre of pressure).
+The keyboard still works for testing.
+
+**Quick start (live):**
+1. Start the board software.
+2. Run `Tools/EmgBridge/run_bridge.bat`, then click Scan and Connect.
+3. Press Play in Unity.
+4. Stand still on the board for 2 s, then press **F4** to calibrate the EMG.
+5. Press **Enter** to start.
+
+Use **F6** to switch to the recordings for a demo without hardware. Full details are in [SENSORS.md](SENSORS.md).
 
 ---
 
@@ -312,6 +322,27 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
 ---
 
 ## Changelog
+
+### v5.0: final EMG + balance-board game
+* Merged John's v4.0: his EMG demo input, recordings in `StreamingAssets`, and the 80 km/h speed cap.
+* **Live EMG** from the BioRadio through `Tools/EmgBridge/ski_emg_bridge.py`, over UDP 50557.
+  * It is based on the kit's bridge, but streams every sample.
+  * The kit's original bridge also works.
+* **EMG filters:**
+  * 20–450 Hz Butterworth band-pass, 50 Hz notch, rectify, then a 5 Hz envelope (John's envelope cut-off).
+  * Per-muscle thresholds: jump 0.15 / 0.08, backflip 0.40 / 0.10.
+  * On the recording: jump 63/63 detected with 0 false, 29 ms after the contraction starts; backflip 57/57 with 0 false.
+* **COP filters** (v4.0 had none, only the keyboard):
+  * weight gate and glitch rejection;
+  * 3 Hz Butterworth low-pass;
+  * neutral calibration and dead zones.
+  * The live `WiiMote1_All.txt` is followed read-only.
+* Guided EMG calibration (**F4**), saved per computer. "Stand still" centring for the board.
+* Always-on status bar. **F6** switches LIVE ↔ REPLAY. Self-test modes check the live paths without hardware.
+
+### v3.0 / v4.0
+* v3.0: steering tuned to 80 °/s, with 0.861 air steer. Added `CONTROLS.md`.
+* v4.0 (John): EMG demo input (keys trigger real recorded contractions through the filters) and an 80 km/h cap.
 
 ### v2.0
 * **Gradual steering:** the steer input sets the turn *rate* (`SkierSettings.steerTurnRate`,

@@ -9,7 +9,9 @@ namespace SkiGame.Sensors
         /// <summary>Play back a recorded file in real time (loops).</summary>
         Replay,
         /// <summary>Follow a text file that another program keeps appending to (read-only).</summary>
-        LiveFile
+        LiveFile,
+        /// <summary>EMG only: receive live samples from the BioRadio Python bridge over UDP (127.0.0.1).</summary>
+        LiveBridge
     }
 
     /// <summary>
@@ -20,7 +22,7 @@ namespace SkiGame.Sensors
     [CreateAssetMenu(menuName = "Ski Game/Sensor Settings", fileName = "SensorSettings")]
     public class SensorSettings : ScriptableObject
     {
-        [Header("Master switch")]
+        [Header("Master switch  (F6 in game switches LIVE <-> REPLAY for a quick test)")]
         [Tooltip("Use the EMG + balance-board input. Off = keyboard only (the old behaviour).")]
         public bool useSensors = true;
         [Tooltip("Keyboard keys keep working alongside the sensors (handy for testing).")]
@@ -28,9 +30,10 @@ namespace SkiGame.Sensors
 
         // ------------------------------------------------------------------ COP
         [Header("COP (Wii Balance Board) - source")]
-        public SignalSource copSource = SignalSource.Replay;
+        [Tooltip("Off / Replay (recorded file) / LiveFile (WiiMote1_All.txt). LiveBridge is EMG-only and means Off here.")]
+        public SignalSource copSource = SignalSource.LiveFile;
         [Tooltip("Recorded file from the Wii Balance Board Recorder (Time, CpX, CpY, ... Weight). Relative paths start at the project folder.")]
-        public string copReplayFile = "SensorData/COP/John16.txt";
+        public string copReplayFile = "Assets/StreamingAssets/John14.txt";
         [Tooltip("The live file written by the board software. Opened READ-ONLY; it is never changed.")]
         public string copLiveFile = @"C:\Users\praka\OneDrive\Desktop\Balance Board\Balance Board\WiiMote1_All.txt";
 
@@ -84,12 +87,25 @@ namespace SkiGame.Sensors
 
         // ------------------------------------------------------------------ EMG
         [Header("EMG - source")]
-        public SignalSource emgSource = SignalSource.Replay;
+        [Tooltip("Off / Replay (recorded file) / LiveFile (growing CSV) / LiveBridge (BioRadio Python bridge over UDP).")]
+        public SignalSource emgSource = SignalSource.LiveBridge;
         [Tooltip("Recorded BioRadio export (sample, time_s, ch1_mv, ch2_mv). Relative paths start at the project folder.")]
-        public string emgReplayFile = "SensorData/EMG/john_final.csv";
+        public string emgReplayFile = "Assets/StreamingAssets/john_final.csv";
         [Tooltip("Live EMG text/CSV file another program keeps appending to (same columns as the export). Opened read-only.")]
         public string emgLiveFile = "";
-        [Tooltip("Sampling rate of the EMG (Hz). BioRadio recording: 1000.")]
+        [Header("EMG - live bridge (Tools/EmgBridge/ski_emg_bridge.py)")]
+        [Tooltip("UDP port the bridge sends to (the BioRadio kit uses 50557).")]
+        public int bridgePort = 50557;
+        [Tooltip("BioRadio channel number used for JUMP (forearm flexor, FCU).")]
+        public int bridgeJumpChannel = 1;
+        [Tooltip("BioRadio channel number used for BACKFLIP (biceps).")]
+        public int bridgeBackflipChannel = 2;
+        [Tooltip("TEST ONLY: Unity sends the recorded EMG to itself in the bridge format, to check the UDP path without hardware.")]
+        public bool bridgeSelfTest = false;
+        [Tooltip("TEST ONLY: Unity writes the recorded COP into a temporary file in the live format and follows it, to check the live-file path without the board. The real WiiMote file is not touched.")]
+        public bool copLiveSelfTest = false;
+
+        [Tooltip("Sampling rate of the EMG (Hz). BioRadio: 1000. With the bridge it is taken from the bridge automatically.")]
         public float emgSampleRate = 1000f;
         [Tooltip("Column of the JUMP muscle (FCU) in the file. john_final.csv: 2 = ch1_mv.")]
         public int jumpColumn = 2;
@@ -105,29 +121,34 @@ namespace SkiGame.Sensors
         public float emgNotchHz = 50f;
         public float emgNotchQ = 30f;
         [Tooltip("Envelope: full-wave rectify, then 2nd-order Butterworth low-pass at this frequency (Hz).")]
-        public float emgEnvelopeHz = 8f;
+        public float emgEnvelopeHz = 5f;
 
         [Header("EMG - detection (fractions of the calibrated range: 0 = rest, 1 = strong contraction)")]
-        [Range(0f, 1f)] public float jumpOnThreshold = 0.30f;
-        [Range(0f, 1f)] public float jumpOffThreshold = 0.15f;
+        [Range(0f, 1f)] public float jumpOnThreshold = 0.15f;
+        [Range(0f, 1f)] public float jumpOffThreshold = 0.08f;
         [Range(0f, 1f)] public float backflipOnThreshold = 0.40f;
-        [Range(0f, 1f)] public float backflipOffThreshold = 0.15f;
+        [Range(0f, 1f)] public float backflipOffThreshold = 0.10f;
         [Tooltip("The envelope must stay above the ON threshold this long (ms) before it counts. Rejects spikes.")]
-        public float emgMinOnMs = 30f;
+        public float emgMinOnMs = 20f;
 
         [Header("EMG - calibration")]
-        [Tooltip("Seconds of signal used to measure rest level (10th percentile) and contraction level (99th percentile). Do a few contractions in this time.")]
+        [Tooltip("Replay: seconds of the recording used to measure rest (10th percentile) and contraction (99th percentile).")]
         public float emgCalibrationSeconds = 30f;
+        [Tooltip("Guided calibration (F4): seconds to RELAX, then to flex the FOREARM, then to flex the BICEPS.")]
+        public float calibRelaxSeconds = 4f, calibFlexSeconds = 6f;
+        [Tooltip("Remember each player's EMG calibration between sessions.")]
+        public bool saveCalibration = true;
         [Tooltip("Used until calibration finishes (live) - envelope values in mV measured from john_final.csv.")]
-        public float jumpRestMv = 0.0047f;
-        public float jumpMaxMv = 0.233f;
-        public float backflipRestMv = 0.0037f;
-        public float backflipMaxMv = 0.588f;
+        public float jumpRestMv = 0.0049f;
+        public float jumpMaxMv = 0.229f;
+        public float backflipRestMv = 0.0036f;
+        public float backflipMaxMv = 0.566f;
 
         [Header("Hotkeys")]
         public KeyCode debugPanelKey = KeyCode.F2;
         public KeyCode recalibrateCopKey = KeyCode.F3;
         public KeyCode recalibrateEmgKey = KeyCode.F4;
+        public KeyCode switchProfileKey = KeyCode.F6;
 
         /// <summary>Resolves a path: absolute stays as is, relative starts at the project folder.</summary>
         public static string Resolve(string path)
@@ -135,7 +156,11 @@ namespace SkiGame.Sensors
             if (string.IsNullOrWhiteSpace(path)) return "";
             if (System.IO.Path.IsPathRooted(path)) return path;
             string root = System.IO.Path.GetDirectoryName(Application.dataPath);
-            return System.IO.Path.GetFullPath(System.IO.Path.Combine(root, path));
+            string full = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, path));
+            if (System.IO.File.Exists(full)) return full;
+            // In a built game the project folder doesn't exist: look in StreamingAssets by file name.
+            string alt = System.IO.Path.Combine(Application.streamingAssetsPath, System.IO.Path.GetFileName(path));
+            return System.IO.File.Exists(alt) ? alt : full;
         }
     }
 }

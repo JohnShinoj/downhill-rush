@@ -1,6 +1,6 @@
 # Sensor control: EMG and Wii Balance Board
 
-This document covers how the game is controlled by the body instead of the keyboard:
+How the game is controlled by the body instead of the keyboard:
 
 | Body signal | Sensor | Game control |
 |---|---|---|
@@ -9,7 +9,9 @@ This document covers how the game is controlled by the body instead of the keybo
 | Lean left / right | Wii Balance Board centre of pressure (COP), medio-lateral | **Steering** |
 | Lean forward / back | Wii Balance Board COP, antero-posterior | **Speed** (forward = faster, back = brake) |
 
-It covers which filters are used and why, the numbers from analysing the recordings, how replay and live mode work, and how to tune everything. All filters run **causally**: they only use past samples, exactly as in real time. The analysis therefore measures the delays the player will actually feel.
+**v5.0 is the final, playable version.** EMG comes live from the BioRadio through the UDP bridge, and COP comes live from the board software's `WiiMote1_All.txt`. Both have replay modes for testing.
+
+This document covers which filters are used and why, the numbers from analysing the recordings, how replay and live mode work, and how to tune everything. All filters run **causally**: they only use past samples, exactly as in real time. The analysis therefore measures the delays the player will actually feel.
 
 The figures are in `Docs/figures/`. The analysis script is `Tools/SignalAnalysis/sensor_analysis.py`. It uses the same filter maths as the game, so you can re-run it on new recordings.
 
@@ -19,7 +21,7 @@ The figures are in `Docs/figures/`. The analysis script is `Tools/SignalAnalysis
 
 | File | What it is | Rate | Length |
 |---|---|---|---|
-| `john_final.csv` (+ `.json`) | BioRadio EMG, 2 channels, in mV | 1000 Hz | 131.8 s, 63 Ch1 contractions + 57 Ch2 contractions, alternating every ~1 s |
+| `john_final.csv` (+ `.json`, also in `Assets/StreamingAssets`) | BioRadio EMG, 2 channels, in mV | 1000 Hz | 131.8 s, 63 Ch1 contractions + 57 Ch2 contractions, alternating every ~1 s |
 | `John14.txt`, `John15.txt`, `John16.txt` | Wii Balance Board Recorder export: Time (s), CpX, CpY (cm), 4 corner forces (N), Weight (kg), raw counts | 5 Hz | 111 s, 74 s, 63 s. Leans left/right, then forward/back |
 | `WiiMote1_All.txt` (live, 886 MB) | Written continuously by the board software. We read only its last 5,000 lines into `Data/live_sample.txt`. | **≈ 85 lines/s** | 10 tab-separated columns |
 
@@ -37,8 +39,8 @@ Format of the live file: column 4 = COP X, column 5 = COP Y, column 6 = total we
 | Median frequency of the EMG band | 83 Hz | 57 Hz | Normal surface EMG, well inside 20–450 Hz |
 | 50 / 100 / 150 Hz mains peaks (vs. neighbouring frequencies) | 1.7× / 1.2× / 1.5× | 1.5× / 1.1× / 1.6× | Very little mains hum in this lab. The 50 Hz notch is kept as cheap insurance for other rooms. |
 | DC offset | −0.05 mV | −0.79 mV | The high-pass removes it. The filter is primed with the first sample so start-up doesn't fire a false jump. |
-| Envelope at rest / during contraction | 0.0047 / 0.233 mV | 0.0037 / 0.588 mV | Large signal-to-noise ratio, so a threshold works well |
-| Small activity before each Ch2 contraction | — | up to ~25 % of a full contraction | **Ch2 needs a higher ON threshold (0.40)** than Ch1 (0.30) |
+| Envelope at rest / during contraction | 0.0049 / 0.229 mV | 0.0036 / 0.566 mV | Large signal-to-noise ratio, so a threshold works well |
+| Small activity before each Ch2 contraction | — | up to ~25–35 % of a full contraction | **Ch2 needs a higher ON threshold (0.40)** than Ch1 (0.15) |
 
 ### 2.2 The EMG filter chain, run on every sample at 1000 Hz
 
@@ -48,50 +50,66 @@ raw EMG (mV)
  2. Low-pass   : 4th-order Butterworth, 450 Hz    (two biquads, Q = 0.5412 and 1.3066)
  3. Notch      : 50 Hz, Q = 30                     (≈ 1.7 Hz wide)
  4. Rectify    : full-wave, |x|
- 5. Envelope   : 2nd-order Butterworth low-pass, 8 Hz   (Q = 0.7071)
- 6. Normalise  : n = (envelope − rest) / (contraction − rest)    rest = 10th, contraction = 99th percentile
- 7. Detect     : hysteresis. ON when n > ON threshold for at least 30 ms; OFF when n < 0.15
+ 5. Envelope   : 2nd-order Butterworth low-pass, 5 Hz   (Q = 0.7071)
+ 6. Normalise  : n = (envelope − rest) / (contraction − rest)
+ 7. Detect     : hysteresis per muscle, ON must last ≥ 20 ms
+                   jump (forearm):  ON 0.15, OFF 0.08
+                   backflip (biceps): ON 0.40, OFF 0.10
  8. Game       : ON edge → one jump / backflip (cooldown 0.25 s / 0.30 s, 0.13 s input buffer, 0.12 s coyote time)
 ```
 
 All filters are IIR biquads designed with the bilinear transform (RBJ cookbook formulas), so cascading them gives exact Butterworth responses. See `emg_filters.png`.
 
-### 2.3 How the settings were chosen
+### 2.3 John's v4 filters vs. the final choice
 
-The detector was run on the recording with every combination of:
+John's v4 used:
+- a 20–450 Hz band-pass, then rectification;
+- a **5 Hz** envelope;
+- absolute thresholds at 30 % / 12 % of the 20th–95th percentile range;
+- a 0.6 s refractory period.
 
-- envelope cut-off: 4, 6, 8 and 10 Hz;
-- ON threshold: 0.2, 0.3 and 0.4;
-- OFF threshold: 0.10 and 0.15;
-- minimum ON time: 30 and 50 ms.
+My first version used an 8 Hz envelope with thresholds of 0.30 / 0.40. All variants were scored on `john_final.csv` against the contractions found offline:
 
-Each run was scored against the contractions found offline: a zero-phase (non-causal) envelope, peaks with prominence above 40 % of the range.
+| Version | Jump: detected / false / delay* | Backflip: detected / false / delay* |
+|---|---|---|
+| John's v4 | 63/63 · 0 · 48 ms | 56/57 · **9 false** · fires on the small activity before each contraction |
+| My first version (8 Hz envelope) | 63/63 · 0 · 88 ms | 57/57 · 2 false · 159 ms |
+| **Final: John's 5 Hz envelope + per-muscle thresholds** | **63/63 · 0 · 29 ms** | **57/57 · 0 false · 159 ms** |
 
-- **8 Hz envelope** had the shortest delay with no errors. 4–6 Hz was 15–40 ms slower; 10 Hz was not more accurate but was noisier.
-- **Ch1 ON = 0.30**:
-  - At 0.20 there were 2–4 false triggers; at 0.40 detection was 40 ms slower.
-  - At 0.30: **63 / 63 detected, 0 false**.
-- **Ch2 ON = 0.40**:
-  - At 0.30 there were 8–10 false triggers from the small activity before each contraction.
-  - At 0.40: **57 / 57 detected, 2 false**. One false trigger comes 0.28 s after a real one, so the game's 0.30 s backflip cooldown absorbs it. The other remains: 1 extra in 132 s, and it does nothing while on the ground.
-- **OFF = 0.15, minimum ON time = 30 ms**: this rejects single spikes and keeps one trigger per contraction.
+\* Delay = how long after the contraction starts the jump fires (start = 30 % of that contraction's peak on the offline envelope).
 
-As a realistic test, I calibrated on the **first 30 s only** and tested on the remaining 100 s:
+So the final version keeps John's faster 5 Hz envelope. It adds per-muscle normalised thresholds, a low threshold for the clean forearm signal and a higher one for the biceps, plus the notch and filter priming. The jump now fires **165 ms before the contraction peaks**.
 
-| | Contractions | Detected | Missed | False | Delay after onset* | Fires before the peak |
-|---|---|---|---|---|---|---|
-| Jump (Ch1) | 49 | **49** | 0 | 0 | 90 ms | 107 ms before |
-| Backflip (Ch2) | 42 | **42** | 0 | 2 | 159 ms | 111 ms before |
+A grid search tried envelope cut-offs of 5 and 8 Hz, calibration at the 95th and 99th percentile, ON thresholds from 0.10 to 0.50, OFF thresholds from 0.06 to 0.15, and minimum ON times of 20 and 30 ms. Each was calibrated on the first 30 s and tested on the remaining 100 s. These choices were the fastest with no errors, and they keep a safety margin: the jump threshold first gives a false trigger at 0.10, and the backflip at 0.35.
 
-\* "Onset" is where the offline envelope reaches 30 % of that contraction's peak. In both cases the game reacts **before the contraction reaches its peak**.
+### 2.4 Calibration (each player is different)
 
-`emg_detection.png` shows the envelope, the thresholds and the detected activity for 12 s of the recording.
+- **Live: press F4 on the main menu.** Follow the big on-screen prompts:
+  - **RELAX BOTH ARMS** (4 s);
+  - **FLEX FOREARM** 3 times (6 s);
+  - **FLEX BICEPS** 3 times (6 s).
 
-### 2.4 Calibration
+  Rest is the median of the relax phase; contraction is the 99th percentile of each muscle's own flex phase. The result is **saved** and reused next time. Press F4 again for a new player.
+  - Until someone calibrates, the status bar says "EMG not calibrated - press F4", and values from `john_final.csv` are used.
+  - If no clear contraction is found (peak less than 3× rest), the old values are kept.
+- **Replay:** the first 30 s of the recording are used automatically.
 
-- **Replay:** before play starts, the first 30 s of the file are filtered and the 10th and 99th percentiles of each envelope are used as "rest" and "contraction".
-- **Live:** for the first 30 s the player should rest, then make a few strong contractions of each muscle. The panel shows CALIBRATING %. Until it finishes, the values measured from `john_final.csv` are used. Press **F4** to recalibrate at any time.
-- If no clear contraction is found (peak less than 3× rest), the old values are kept and the panel says so.
+### 2.5 Getting live EMG into the game: the bridge
+
+```
+BioRadio --Bluetooth--> BioRadioSDK.dll --> Tools/EmgBridge/ski_emg_bridge.py --UDP 127.0.0.1:50557--> game
+```
+
+The kit's `bioradio_unity_bridge.py` sends only the **last sample and the RMS of each 50 ms batch**. That RMS isn't filtered: on Ch2 it is dominated by the −0.79 mV offset and the movement artefact. So I wrote `ski_emg_bridge.py`, based on the kit's script with the same SDK calls and the same Scan / Connect window. It changes two things:
+
+1. It sends **every sample**, in a `samples` array, every 20 ms, so the game runs the full filter chain above.
+2. It redraws the plot separately, every 200 ms, so drawing never delays the data.
+
+It still sends the kit's fields (`channel`, `raw_mv`, `rms_mv`, `sample_count`, `sample_rate_hz`), so the kit's `BioRadioUdpMover.cs` keeps working.
+
+The game also accepts the **kit's original bridge**. In that case it uses `rms_mv` directly as the envelope; this works, but rejects noise less well.
+
+The SDK DLL is not copied into the repository, because of the vendor licence. The bridge finds it in the kit's `Python_Bridge` folder in Downloads, or you can pass `--sdk`.
 
 ---
 
@@ -149,53 +167,61 @@ raw COP X, Y (cm), weight (kg)
 
 | Stage | EMG jump / backflip | COP steering |
 |---|---|---|
-| Sensor / software / file | BioRadio + export (unknown) | ~12 ms (85 Hz file) |
-| Filtering | band-pass ≈ 2–5 ms + envelope 29 ms | low-pass 77 ms |
-| Detection | minimum ON time 30 ms + threshold crossing | dead zone + 0.05 s ramp (≈ 25 ms average) |
+| Sensor / software | BioRadio Bluetooth + SDK buffer (unknown, typically 20–50 ms) | ~12 ms (85 Hz file) |
+| Bridge | ≤ 20 ms (send period) + < 1 ms UDP | — |
+| Filtering + detection | measured: **29 ms** (jump) / **159 ms** (backflip) after the contraction starts | low-pass 77 ms + 0.05 s ramp (≈ 25 ms average) |
 | Game frame | ≤ 17 ms | ≤ 17 ms |
-| **Measured** | **90 ms (jump) / 159 ms (backflip) after the contraction starts**, but before its peak | **≈ 120–130 ms** to follow a lean |
 
 The game's 0.12 s coyote time and 0.13 s input buffer cover most of the EMG delay: a jump triggered slightly after going over a ramp lip still counts.
 
 ---
 
-## 5. How to use it in Unity
+## 5. How to play with EMG and the balance board
 
-All settings are in **`Assets/Resources/SensorSettings.asset`**. Click it in the Project window and edit it in the Inspector.
+**Before the session:**
+1. Turn on the BioRadio and check the channels in BioCapture: **Ch1 = forearm (jump), Ch2 = biceps (backflip)**. Then **close BioCapture**.
+2. Start the Wii Balance Board software so that `WiiMote1_All.txt` is updating.
+3. Double-click **`Tools/EmgBridge/run_bridge.bat`**, then click **Scan**, choose your BioRadio, and click **Connect**. Leave this window open.
+   - First time only: `py -m pip install pythonnet matplotlib`.
+4. Open the project in Unity and press **Play**.
 
-| What you want | Set |
-|---|---|
-| Test with the recordings (now) | `Cop Source = Replay`, `Emg Source = Replay` (default) |
-| Live balance board | `Cop Source = LiveFile`, `Cop Live File = C:\Users\praka\OneDrive\Desktop\Balance Board\Balance Board\WiiMote1_All.txt` |
-| Live EMG | `Emg Source = LiveFile` and `Emg Live File` = a text/CSV file your EMG software keeps appending to (same columns as `john_final.csv`) |
-| Keyboard only | untick `Use Sensors` |
-| Another COP recording | `Cop Replay File = SensorData/COP/John14.txt` (paths are relative to the project folder) |
+**In the game:**
+5. Check the status bar at the bottom-left: **LIVE · EMG ● bridge · COP ● board**. Green means data is arriving.
+6. Step on the board and **stand still** until the "STAND STILL" message disappears (2 s). This finds your centre.
+7. Press **F4** on the menu and follow the calibration prompts (16 s).
+8. Press **Enter** to start:
+   - lean left or right to steer, forward or back to speed up or brake;
+   - squeeze your forearm to jump;
+   - curl your biceps in the air to backflip.
 
-The recordings are in `D:\SSRP Game project\SensorData\`. They are **not** uploaded to GitHub, because the repository is public and these are personal physiological recordings.
-
-**In game:**
+**Keys:**
 
 | Key | Does |
 |---|---|
-| **F2** | Sensor panel: COP raw / filtered / neutral, weight, steer and speed bars, both EMG envelopes against their thresholds, a 6 s scrolling plot |
-| **F3** | Re-measure the neutral stance (stand still for 2 s) |
-| **F4** | Recalibrate EMG (30 s: rest, then a few strong contractions) |
-| F1 | The general input panel (smoothed values, triggers, buffers) |
+| **F2** | Sensor panel: COP raw / filtered / centre, weight, steer and speed bars, both EMG envelopes against their thresholds, a 6 s scrolling plot |
+| **F3** | Re-centre the board (stand still for 2 s) |
+| **F4** | Guided EMG calibration (saved per computer) |
+| **F6** | Switch **LIVE ↔ REPLAY**. Replay plays the recordings `john_final.csv` and `John14.txt`, so you can demo the game without hardware. |
+| Keyboard | Still works alongside the sensors (A/D, W/S, Space, F) |
 
-The keyboard still works alongside the sensors (`Keyboard Also Works`), which is handy for testing.
+**Testing without hardware:** `Tools/EmgBridge/run_bridge_replay_test.bat` streams the recorded EMG through the real UDP path. Alternatively, in `Assets/Resources/SensorSettings.asset`, tick `Bridge Self Test` and/or `Cop Live Self Test`. Unity then feeds the recordings through the live paths itself, and **never touches the real WiiMote file**. Untick them before playing for real.
 
-**About the replay:** the EMG recording alternates the two muscles about every 1 s, and a normal jump lasts 0.8 s. So in replay most biceps contractions arrive after the skier has already landed, and backflips only happen on ramp jumps, which last about 1.2 s. In real play the player does them in sequence, so this is expected.
+**Settings** are in `Assets/Resources/SensorSettings.asset`:
+
+| What you want | Set |
+|---|---|
+| Live (default) | `Cop Source = LiveFile`, `Emg Source = LiveBridge` |
+| A different board file | `Cop Live File` (opened read-only) |
+| Channels swapped | `Bridge Jump Channel` / `Bridge Backflip Channel` |
+| Keyboard only | untick `Use Sensors` |
 
 ---
 
-## 6. Still to confirm (needs someone on the board or the EMG setup)
+## 6. Still to confirm with someone on the board
 
-1. **Which EMG channel is which muscle.** I assumed Ch1 = FCU (jump) and Ch2 = biceps (backflip). Swap `Jump Column` and `Backflip Column` (2 = ch1, 3 = ch2) if it's the other way round.
-2. **Live COP direction and scale.** Stand on the board with the live file running and open F2.
-   - Lean right: Steer should go **+**. If it goes −, untick `Live Invert X`.
-   - Lean forward: Speed should go **+**. If it goes −, tick `Live Invert Y`.
-   - If a comfortable lean doesn't reach ±1, lower `Steer Full Scale Cm`. The live software may use a different cm scale from the Recorder.
-3. **Live EMG.** Your professor only provided the COP file. If the EMG software can also write a growing text file, point `Emg Live File` at it and set the sample rate and columns.
+1. **Live COP direction.** Open F2 and lean right: Steer should go **+**. If it goes −, untick `Live Invert X`. Lean forward: Speed should go **+**. If it goes −, tick `Live Invert Y`.
+2. **Live COP scale.** If a comfortable lean doesn't reach ±1, lower `Steer Full Scale Cm`. The live software may use a different cm scale from the Recorder.
+3. **EMG units.** The kit multiplies the SDK values by 1000 (V → mV), as in `john_final.json`. Calibration (F4) makes the game independent of the exact scale anyway.
 
 ---
 
@@ -204,11 +230,12 @@ The keyboard still works alongside the sensors (`Keyboard Also Works`), which is
 | Group | Parameter | Value |
 |---|---|---|
 | EMG | high-pass / low-pass / notch | 20 Hz BW4 / 450 Hz BW4 / 50 Hz Q30 |
-| EMG | envelope | rectify + 8 Hz BW2 |
-| EMG | jump ON / OFF | 0.30 / 0.15 |
-| EMG | backflip ON / OFF | 0.40 / 0.15 |
-| EMG | minimum ON time | 30 ms |
-| EMG | calibration | first 30 s, 10th / 99th percentile |
+| EMG | envelope | rectify + 5 Hz BW2 |
+| EMG | jump ON / OFF | 0.15 / 0.08 |
+| EMG | backflip ON / OFF | 0.40 / 0.10 |
+| EMG | minimum ON time | 20 ms |
+| EMG | calibration | live: F4 guided (relax median, flex 99th percentile), saved · replay: first 30 s, 10th / 99th percentile |
+| EMG | live input | UDP 127.0.0.1:50557 from ski_emg_bridge.py (every sample, 20 ms batches) |
 | COP | processing rate | 100 Hz |
 | COP | low-pass | 3 Hz BW2 |
 | COP | glitch limit | 6 cm per sample (max 3 in a row) |
