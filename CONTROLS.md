@@ -184,6 +184,8 @@ The **buffer** and **coyote time** together give a ±0.12–0.13 s window around
 
 ## 7. EMG: how it affects the controls
 
+> The implemented filters and thresholds (measured from the recordings) are in [SENSORS.md](SENSORS.md). Where the two differ, SENSORS.md is current: the envelope is 8 Hz, the jump threshold 0.30 and the backflip threshold 0.40.
+
 ### 7.1 Mapping
 
 - **FCU (forearm flexor) contraction → `JumpTriggered`**
@@ -232,6 +234,8 @@ Watch for **crosstalk**: a hard grip can also activate the biceps, which would t
 ---
 
 ## 8. Wii Balance Board (COP): how it affects steering and speed
+
+> The implemented COP filter (3 Hz low-pass, 10 cm full scale, dead zones 0.08 / 0.30) is described in [SENSORS.md](SENSORS.md).
 
 ### 8.1 Mapping
 

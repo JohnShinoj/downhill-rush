@@ -1,0 +1,155 @@
+{
+  "emg": {
+    "Jump (ch1, FCU)": {
+      "power_fraction": {
+        "<20 Hz (artefact)": 32.2,
+        "20-450 Hz (EMG)": 67.7
+      },
+      "mains_line_to_neighbour_ratio": {
+        "50 Hz": 1.74,
+        "100 Hz": 1.19,
+        "150 Hz": 1.52
+      },
+      "median_frequency_hz": 82.763671875,
+      "calibration_rest_mv": 0.00466564269445485,
+      "calibration_max_mv": 0.23319506287809674,
+      "on_threshold": 0.3,
+      "off_threshold": 0.15,
+      "test_after_calibration": {
+        "true": 49,
+        "detected": 49,
+        "missed": 0,
+        "false": 0,
+        "latency_after_onset_ms": 89.53061224489795,
+        "before_peak_ms": 107.08163265306122
+      },
+      "whole_file": {
+        "true": 63,
+        "detected": 63,
+        "missed": 0,
+        "false": 0,
+        "latency_after_onset_ms": 88.0,
+        "before_peak_ms": 104.73015873015873
+      }
+    },
+    "Backflip (ch2, biceps)": {
+      "power_fraction": {
+        "<20 Hz (artefact)": 50.2,
+        "20-450 Hz (EMG)": 49.8
+      },
+      "mains_line_to_neighbour_ratio": {
+        "50 Hz": 1.49,
+        "100 Hz": 1.1,
+        "150 Hz": 1.58
+      },
+      "median_frequency_hz": 56.884765625,
+      "calibration_rest_mv": 0.003699391330878553,
+      "calibration_max_mv": 0.5880491838636771,
+      "on_threshold": 0.4,
+      "off_threshold": 0.15,
+      "test_after_calibration": {
+        "true": 42,
+        "detected": 42,
+        "missed": 0,
+        "false": 2,
+        "latency_after_onset_ms": 158.76190476190476,
+        "before_peak_ms": 110.88095238095238
+      },
+      "whole_file": {
+        "true": 57,
+        "detected": 57,
+        "missed": 0,
+        "false": 2,
+        "latency_after_onset_ms": 158.91228070175438,
+        "before_peak_ms": 94.28070175438596
+      }
+    },
+    "envelope_group_delay_ms_at_1Hz": 28.561608355143626
+  },
+  "cop": {
+    "John14.txt": {
+      "sample_rate_hz": 4.999999999999929,
+      "duration_s": 111.2,
+      "stance_mean_cm": [
+        -0.99,
+        -1.61
+      ],
+      "stance_sd_cm": [
+        0.8,
+        0.61
+      ],
+      "noise_sd_cm": [
+        1.01,
+        0.41
+      ],
+      "lean_p95_cm": [
+        12.7,
+        7.2
+      ],
+      "max_lean_speed_cm_s": 57.4,
+      "time_at_full_steer_pct": 20.0
+    },
+    "John15.txt": {
+      "sample_rate_hz": 5.0,
+      "duration_s": 73.8,
+      "stance_mean_cm": [
+        -0.77,
+        -1.14
+      ],
+      "stance_sd_cm": [
+        0.1,
+        0.27
+      ],
+      "noise_sd_cm": [
+        0.24,
+        0.25
+      ],
+      "lean_p95_cm": [
+        13.3,
+        8.0
+      ],
+      "max_lean_speed_cm_s": 19.5,
+      "time_at_full_steer_pct": 25.1
+    },
+    "John16.txt": {
+      "sample_rate_hz": 5.0000000000000036,
+      "duration_s": 63.001,
+      "stance_mean_cm": [
+        -1.71,
+        -1.39
+      ],
+      "stance_sd_cm": [
+        0.15,
+        0.27
+      ],
+      "noise_sd_cm": [
+        0.35,
+        0.22
+      ],
+      "lean_p95_cm": [
+        14.3,
+        7.0
+      ],
+      "max_lean_speed_cm_s": 25.8,
+      "time_at_full_steer_pct": 25.6
+    },
+    "lowpass_group_delay_ms_at_0.5Hz": 76.8303886674738
+  },
+  "live_file": {
+    "lines": 5000,
+    "columns": 10,
+    "lines_per_second_median": 85.0,
+    "col4_copx_range": [
+      26.049999,
+      26.049999
+    ],
+    "col5_copy_range": [
+      16.75,
+      16.75
+    ],
+    "col6_weight_range": [
+      2.556992,
+      2.806698
+    ]
+  }
+}
