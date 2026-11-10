@@ -68,16 +68,20 @@ namespace SkiGame.Sensors
         [Header("COP - calibration and scaling")]
         [Tooltip("Seconds of quiet standing averaged at the start to find the neutral (centre) position. F3 re-does it.")]
         public float copNeutralSeconds = 2f;
-        [Tooltip("Lean (cm from neutral) that gives FULL steering. Recorded leans reach ~12-13 cm, so 10 cm = comfortable full turn.")]
-        public float steerFullScaleCm = 10f;
+        [Tooltip("Lean (cm from your centre) that gives FULL steering. Bigger = less sensitive.")]
+        public float steerFullScaleCm = 15f;
+        [Tooltip("Leans smaller than this (cm) do not steer at all - standing sway and small weight shifts are ignored.")]
+        public float steerDeadZoneCm = 1.5f;
+        [Tooltip("Response curve. 1 = linear. Higher = gentler for small leans, still full turn for a big lean (1.7: half lean -> ~30% turn).")]
+        [Range(1f, 3f)] public float steerCurve = 1.7f;
         [Tooltip("Lean (cm from neutral) that gives full boost / full brake. Forward-back leans reach ~7 cm.")]
         public float speedFullScaleCm = 6f;
         [Tooltip("Use forward / back lean for speed (forward = faster, back = brake).")]
         public bool copControlsSpeed = true;
 
         [Header("COP - game-side response (applied to the input smoothing)")]
-        [Tooltip("Dead zone on steering (fraction of full scale). 0.08 x 10 cm = 0.8 cm of stance sway ignored.")]
-        [Range(0f, 0.5f)] public float steerDeadZone = 0.08f;
+        [Tooltip("Extra dead zone applied by the game after the curve (fraction). The board's own dead zone is Steer Dead Zone Cm above.")]
+        [Range(0f, 0.5f)] public float steerDeadZone = 0.0f;
         [Tooltip("Dead zone on speed. Leaning sideways also moves COP back by ~1.5-2 cm, so this is larger (0.3 x 6 cm = 1.8 cm).")]
         [Range(0f, 0.6f)] public float speedDeadZone = 0.3f;
         [Tooltip("Extra ramp time on steering (s). The low-pass already smooths, so this is shorter than for the keyboard.")]

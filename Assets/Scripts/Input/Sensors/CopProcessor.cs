@@ -11,7 +11,7 @@ namespace SkiGame.Sensors
     ///                -> glitch rejection: a jump of more than 6 cm in one sample is ignored (max 3 in a row)
     ///                -> 2nd-order Butterworth low-pass 3 Hz (keeps voluntary leans, removes jitter)
     ///                -> subtract the neutral stance (mean of the first 2 s standing still; F3 re-does it)
-    ///                -> divide by the full-lean range (10 cm steering, 6 cm speed), clamp to -1..1
+    ///                -> steering: 1.5 cm dead zone, full turn at 15 cm, response curve ^1.7; speed: / 6 cm; clamp to -1..1
     ///
     /// Then GameInputBase adds the dead zone and the short response ramp.
     /// </summary>
@@ -114,7 +114,10 @@ namespace SkiGame.Sensors
                 Steer = Speed = 0f;
                 return;
             }
-            Steer = Clamp((FilteredX - NeutralX) / Math.Max(0.1, s.steerFullScaleCm));
+            // Dead zone in cm, then a response curve: small leans steer gently, a big lean still gives full turn.
+            double dx = FilteredX - NeutralX;
+            double mag = Math.Max(0, Math.Abs(dx) - s.steerDeadZoneCm) / Math.Max(0.1, s.steerFullScaleCm - s.steerDeadZoneCm);
+            Steer = Clamp(Math.Sign(dx) * Math.Pow(Math.Min(1.0, mag), Math.Max(1.0, s.steerCurve)));
             Speed = s.copControlsSpeed ? Clamp((FilteredY - NeutralY) / Math.Max(0.1, s.speedFullScaleCm)) : 0f;
         }
 
