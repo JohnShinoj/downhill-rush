@@ -180,7 +180,9 @@ The game's 0.12 s coyote time and 0.13 s input buffer cover most of the EMG dela
 
 **Before the session:**
 1. Turn on the BioRadio and check the channels in BioCapture: **Ch1 = forearm (jump), Ch2 = biceps (backflip)**. Then **close BioCapture**.
-2. Start the Wii Balance Board software so that `WiiMote1_All.txt` is updating.
+2. Pair the board, then **double-click `wiiuse.exe`** in the `Balance Board` folder. This is the program that writes `WiiMote1_All.txt` (about 85 lines/s) into the folder it runs from.
+   - Close WiiBalanceWalker and the Wii Balance Board Recorder first: only one program can use the board at a time.
+   - The Recorder only writes its own `NameXX.txt` files, at 5 Hz, when you press F1. It does **not** feed the game.
 3. Double-click **`Tools/EmgBridge/run_bridge.bat`**, then click **Scan**, choose your BioRadio, and click **Connect**. Leave this window open.
    - First time only: `py -m pip install pythonnet matplotlib`.
 4. Open the project in Unity and press **Play**.

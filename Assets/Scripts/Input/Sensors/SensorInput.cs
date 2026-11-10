@@ -329,7 +329,7 @@ namespace SkiGame.Sensors
             CopReceiving = !CopStale;
             string name = System.IO.Path.GetFileName(copTail.Path) + (copSelfTest != null ? " (SELF-TEST)" : "");
             if (copTail.LastError != null) CopStatus = "Live file: " + copTail.LastError;
-            else CopStatus = "Live " + name + (CopStale ? "  - no new data (is the board software running?)" : "");
+            else CopStatus = "Live " + name + (CopStale ? "  - no new data: run wiiuse.exe (Balance Board folder) and close WiiBalanceWalker / Recorder" : "");
 
             // Spread the samples that arrived this frame over the internal ticks of this frame.
             copAccumulator += dt;
