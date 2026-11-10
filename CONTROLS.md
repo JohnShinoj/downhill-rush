@@ -68,26 +68,26 @@ Steer = MoveTowards(Steer, raw, dt / responseTime)
 The skier has a **heading** (yaw), measured in degrees from straight downhill.
 
 ```
-authority = 1.0 on the ground, 0.5 in the air        (airSteerFactor)
-yaw      += Steer × 55 °/s × authority × dt          (steerTurnRate)
+authority = 1.0 on the ground, 0.861 in the air      (airSteerFactor)
+yaw      += Steer × 80 °/s × authority × dt          (steerTurnRate)
 yaw       = Clamp(yaw, -60°, +60°)                   (maxHeadingAngle)
 position += (sin yaw, 0, cos yaw) × Speed × dt
 ```
 
 Key points:
 
-- **Steer is a turn rate, not an angle.** Holding right keeps turning right at up to 55 °/s.
+- **Steer is a turn rate, not an angle.** Holding right keeps turning right at up to 80 °/s.
 - **The heading persists.** When steering returns to 0 the skier keeps the current heading and keeps drifting sideways. The game does not pull you back to the track. To go straight again, steer the opposite way.
-- **Heading limit ±60°.** Going from straight to the limit at full steer takes about 60 / 55 ≈ **1.1 s**.
+- **Heading limit ±60°.** Going from straight to the limit at full steer takes about 60 / 80 ≈ **0.75 s** (plus the 0.12 s ramp-up).
 - Sideways speed = `Speed × sin(yaw)`. At 20 m/s, a 10° heading gives about 3.5 m/s sideways and 30° gives 10 m/s.
 
 | Hold at full steer | Heading reached* |
 |---|---|
-| 0.1 s tap | ≈ 3° |
-| 0.25 s | ≈ 12° |
-| 0.5 s | ≈ 25° |
-| 1.0 s | ≈ 53° |
-| ≥ 1.15 s | 60° (limit) |
+| 0.1 s tap | ≈ 5° |
+| 0.25 s | ≈ 17° |
+| 0.5 s | ≈ 37° |
+| 0.75 s | ≈ 57° |
+| ≥ 0.82 s | 60° (limit) |
 
 \* This includes the 0.12 s ramp-up and the 0.04 s release.
 
@@ -170,7 +170,7 @@ A backflip fits inside a normal jump if it starts within about **0.18 s** of tak
 | Steer release (full → 0) | **0.04 s** | `steerReleaseTime` | Input component |
 | Speed ramp (0 → full) | **0.25 s** | `speedResponseTime` | Input component |
 | Steer / speed dead zone | 5 % | `steerDeadZone`, `speedDeadZone` | Input component |
-| Heading 0 → 60° at full steer | ≈ 1.1 s | `steerTurnRate` 55, `maxHeadingAngle` 60 | SkierSettings |
+| Heading 0 → 60° at full steer | ≈ 0.8 s | `steerTurnRate` 80, `maxHeadingAngle` 60 | SkierSettings |
 | Jump cooldown | 0.25 s | `jumpCooldown` | Input component |
 | Backflip cooldown | 0.30 s | `backflipCooldown` | Input component |
 | Jump / flip buffer | **0.13 s** (forgiveness for early triggers) | `inputBufferTime` | SkierSettings |
@@ -258,7 +258,7 @@ Steering is a **turn rate**, so:
 - **Lean right and hold** → the skier keeps turning right, up to a 60° heading.
 - **Return to centre** → the skier **keeps the heading reached** and keeps drifting in that direction. It does not straighten by itself.
 - **Lean the other way** to straighten or turn back.
-- **Half lean** (Steer = 0.5) → half the turn rate (27.5 °/s).
+- **Half lean** (Steer = 0.5) → half the turn rate (40 °/s).
 
 This suits balance training: the player has to make an active corrective weight shift, not just relax. If you want "lean = angle" instead (centre = straight ahead), that is a different steering model and would be a code change.
 
@@ -271,7 +271,7 @@ Forward lean = boost (up to +8 m/s²) and back lean = brake (up to -14 m/s²), b
 | `steerDeadZone` (0.05) | more stance sway ignored; small leans do nothing | more sensitive; may drift from sway |
 | `steerResponseTime` (0.12 s) | smoother, laggier | snappier, passes more noise through |
 | `steerReleaseTime` (0.04 s) | the turn continues a little after you re-centre | the turn stops almost instantly |
-| `steerTurnRate` (55 °/s) | a lean turns faster (more sensitive) | gentler; needs a longer lean |
+| `steerTurnRate` (80 °/s) | a lean turns faster (more sensitive) | gentler; needs a longer lean |
 | `maxHeadingAngle` (60°) | allows sharper sideways travel | keeps the skier more downhill |
 | `speedDeadZone` / `speedResponseTime` | same idea for forward/back | |
 

@@ -21,9 +21,9 @@ MonoBehaviour:
   carveDrag: 1.5
   airAccelerationFactor: 0.3
   maxHeadingAngle: 60
-  steerTurnRate: 55
+  steerTurnRate: 80
   turnRate: 170
-  airSteerFactor: 0.5
+  airSteerFactor: 0.861
   alignSharpness: 12
   bankFriction: 8
   bankPushTurnRate: 110
