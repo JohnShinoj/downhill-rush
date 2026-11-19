@@ -11,7 +11,8 @@ The keyboard still works for testing.
 > ### ⬇ Download the game from the `main` branch
 > **The complete, final game is on `main`, the default branch. You don't need any other branch.**
 > * **Easiest:** on the GitHub page click **Code → Download ZIP** and unzip it. This downloads `main`.
-> * **With Git:** `git clone https://github.com/JohnShinoj/downhill-rush.git` (this also gets `main`).
+> * Before downloading, check that the branch button above the file list says **main**. If not, click it and choose **main**.
+> * **With Git:** `git clone https://github.com/JohnShinoj/downhill-rush.git`, then `cd downhill-rush` and **`git switch main`** to be safe (see step A).
 >
 > Any other branches in this repository are old work-in-progress copies kept only for history.
 > Ignore them. Everything from them is already inside `main`.
@@ -38,9 +39,15 @@ vendor-licensed. See step C2.
 ```bat
 git clone https://github.com/JohnShinoj/downhill-rush.git
 cd downhill-rush
+git switch main
+git branch --show-current
 ```
-`git clone <url>` downloads the repository into a new `downhill-rush` folder (the `main` branch).
-`cd downhill-rush` moves into that folder. (Or use **Code → Download ZIP** on GitHub and unzip it.)
+- `git clone <url>` downloads the repository into a new `downhill-rush` folder.
+- `cd downhill-rush` moves into that folder.
+- `git switch main` makes sure you are on the final version. If it says "Already on 'main'", that's fine.
+- `git branch --show-current` must print **main**.
+
+(Or use **Code → Download ZIP** on GitHub. On the GitHub page, first check that the branch button at the top-left of the file list says **main**.)
 
 1. **Unity Hub → Add → Add project from disk** → choose the `downhill-rush` folder.
 2. Open it with **Unity 6000.6.8f1**. The first import takes a few minutes, because Unity rebuilds `Library/`.
