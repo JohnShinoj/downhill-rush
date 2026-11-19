@@ -15,4 +15,16 @@
 *.unitypackage
 .DS_Store
 Thumbs.db
+
+# Personal physiological recordings stay local (public repo)
+/SensorData/
+/Data/
 *.slnx
+Tools/EmgBridge/recordings/
+# Live board log written by Tools/WiiBoard/start_board.bat (grows ~1 GB per few hours)
+Tools/WiiBoard/WiiMote*.txt
+# BioRadio SDK is vendor-licensed: copy it here locally, never commit it
+Tools/EmgBridge/BioRadioSDK.dll
+Tools/EmgBridge/kit_bridge/recordings/
+Tools/EmgBridge/kit_bridge/BioRadioSDK.dll
+__pycache__/

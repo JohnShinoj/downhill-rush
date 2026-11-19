@@ -4,18 +4,168 @@ A complete, endless downhill skiing prototype built **only from Unity primitives
 code-generated meshes/materials** (no external assets). Steer down a winding slope, dodge
 obstacles, jump logs and crevasses, launch off ramps, do backflips for **x2 coins**.
 
-The game is built so that the next step — **EMG** (jump, backflip) and **Wii Balance Board
-Centre-of-Pressure** (steering, speed) input — is a small, self-contained change.
+**v5: played with the body.** Squeeze the forearm to jump and curl the biceps to backflip
+(BioRadio **EMG**). Lean on a **Wii Balance Board** to steer and change speed (centre of pressure).
+The keyboard still works for testing.
+
+## ▶ Running the final version (start here)
+
+This `main` branch is the **final version**. Everything needed to open the game, play it with the
+keyboard, replay the recordings, and play it **live** with the BioRadio EMG and the Wii Balance
+Board is in this repository. The only exception is the BioRadio SDK (`BioRadioSDK.dll`), which is
+vendor-licensed. See step C2.
+
+### What you need on the laptop
+
+| Need | For | Where to get it |
+|---|---|---|
+| **Unity 6000.6.8f1** (install via Unity Hub) | the game | Unity Hub → Installs → Install Editor → Archive → 6000.6.8f1 |
+| **Git** | getting the code | https://git-scm.com |
+| **Python 3** (the `py` launcher) | the EMG bridge | https://python.org. Tick "Add to PATH" when installing |
+| **BioRadio + BioRadio Student Unity Kit** | live EMG | from the lab (the kit contains `BioRadioSDK.dll`) |
+| **Wii Balance Board + Bluetooth** | live steering | the board tools are already in `Tools/WiiBoard/` |
+
+### A. Get the project and open it
+
+```bat
+git clone https://github.com/JohnShinoj/downhill-rush.git
+cd downhill-rush
+git switch main
+```
+
+1. **Unity Hub → Add → Add project from disk** → choose the `downhill-rush` folder.
+2. Open it with **Unity 6000.6.8f1**. The first import takes a few minutes, because Unity rebuilds `Library/`.
+3. If the game scene isn't open: **Tools → Ski Game → Open Game Scene** (`Assets/Scenes/SkiGame.unity`).
+4. Check that the **Console** shows no red errors.
+
+### B. Play without hardware (keyboard or recordings)
+
+- Press **Play**, then **Enter**. Keyboard controls: **A/D** steer, **W/S** speed, **Space** jump, **F** backflip (in the air).
+- Press **F6** on the menu to switch to **REPLAY**. The game is then driven by the recorded data
+  (`Assets/StreamingAssets/john_final.csv` for EMG, `John14.txt` for COP). Use this for a demo without sensors.
+
+### C. Play LIVE with the sensors
+
+Do these steps in order. Start each program **before** pressing Play.
+
+**C1 – Wii Balance Board → `Tools/WiiBoard/`**
+1. **Pair the board (first time on a laptop only):** open `Tools/WiiBoard/WiiBalanceWalker.exe` →
+   **Add/Remove bluetooth Wii device**, and press the red **SYNC** button under the board's battery cover.
+   When it says connected, **close WiiBalanceWalker**. Only one program can use the board at a time.
+   Also close the Wii Balance Board Recorder if it is open.
+2. Double-click **`Tools/WiiBoard/start_board.bat`**. It runs `wiiuse.exe` in that folder, and wiiuse writes
+   `Tools/WiiBoard/WiiMote1_All.txt` (about 85 lines/s). The game reads that file live and never changes it.
+   - At the start it offers to delete the old log. Say **Y**, because the file only grows (about 1 GB after a few hours).
+   - Keep the window open while playing.
+   - Already running `wiiuse.exe` from your own `Desktop\Balance Board\Balance Board` folder? That also works.
+     The game reads whichever `WiiMote1_All.txt` was written most recently (`SensorSettings` → `Cop Live File`).
+
+**C2 – BioRadio EMG → `Tools/EmgBridge/`**
+1. Turn on the BioRadio. Electrodes: **Ch1 = forearm flexor (jump)**, **Ch2 = biceps (backflip)**. Close BioCapture.
+2. `BioRadioSDK.dll` is found automatically if the kit is in
+   `Downloads\BioRadio_Student_Unity_Kit\BioRadio_Student_Unity_Kit\Python_Bridge\`.
+   Otherwise, copy `BioRadioSDK.dll` into `Tools/EmgBridge/`. It is git-ignored, so it is never uploaded.
+3. Double-click **`Tools/EmgBridge/run_bridge.bat`**. The first run installs `pythonnet` and `matplotlib`.
+   Click **Scan**, choose your BioRadio, then **Connect**. Keep the window open.
+   - **Start Recording / Stop Recording** saves the raw EMG as a CSV (plus an `_info.json`) to the kit's `recordings` folder.
+   - **Alternative:** `Tools/EmgBridge/kit_bridge/run_kit_bridge.bat` runs the BioRadio kit's own bridge
+     (`bioradio_unity_bridge.py`, our copy with CSV recording added). The game accepts it too, but it only sends
+     the RMS of each 50 ms batch, so detection is less clean. **Run only one bridge at a time**, because both use UDP port 50557.
+
+**C3 – In Unity**
+1. Press **Play**. The bottom-left status bar should show **LIVE · EMG ● bridge · COP ● board**. Green means data is arriving.
+   (If it says REPLAY, press **F6**.)
+2. Step on the board and **stand still for 2 s**. This measures your centre. Press **F3** to redo it.
+3. Press **F4** and follow the prompts (relax / squeeze forearm / curl biceps, about 16 s). This is the EMG calibration. It is saved per laptop. Do it again for each new player.
+4. Press **Enter** to start: **lean left/right** to steer, **lean forward/back** for speed,
+   **squeeze your forearm** to jump, **curl your biceps** in the air to backflip.
+5. **F2** opens the sensor panel: live COP, EMG envelopes and thresholds, and a scrolling plot.
+
+### D. If something doesn't work
+
+| Symptom | Fix |
+|---|---|
+| `COP ●` stays red / "File not found" | `start_board.bat` isn't running, or the board isn't connected. Check that `Tools/WiiBoard/WiiMote1_All.txt` is growing. |
+| wiiuse: "No wiimotes found" | Pair again with WiiBalanceWalker (C1.1), close it, press SYNC, then run `start_board.bat` again. |
+| Steering is reversed | `SensorSettings` → tick **Live Invert X** (forward/back: **Live Invert Y**). |
+| Steering is too weak or too strong | `SensorSettings` → **Steer Full Scale Cm** (smaller = more sensitive) / **Steer Dead Zone Cm**. |
+| Steering style | `Assets/Settings/SkierSettings` → **Steer Mode**: `TurnRate` (lean = turning speed) or `LeanSetsHeading` (lean = direction, centre = straight). |
+| `EMG ●` red | The bridge window is closed or not connected. Or `BioRadioSDK.dll` wasn't found: the bridge prints where it looked. |
+| Jumps fire on their own / never fire | Press **F4** to calibrate again, and check the electrode placement. |
+| Test the live paths without hardware | `Tools/EmgBridge/run_bridge_replay_test.bat` streams the recorded EMG through UDP. `SensorSettings` → **Cop Live Self Test** does the same for the board. |
+| Speed limit | `Assets/Settings/SkierSettings` → **Max Speed** in m/s (km/h = m/s × 3.6). |
+
+### Exactly what we used in the last live session
+
+| Part | What ran | In the repo |
+|---|---|---|
+| Wii Balance Board pairing | `WiiBalanceWalker.exe` v0.5 (Add/Remove bluetooth Wii device) | `Tools/WiiBoard/WiiBalanceWalker.exe` + DLLs |
+| Board → file | `wiiuse.exe` writing `WiiMote1_All.txt` (columns: 4 = COP X, 5 = COP Y, 6 = weight kg) | `Tools/WiiBoard/wiiuse.exe`, `wiiuse.dll`, `msvcr100d.dll`, `start_board.bat` |
+| BioRadio → game | `ski_emg_bridge.py` via `run_bridge.bat` (every sample, UDP 127.0.0.1:50557) | `Tools/EmgBridge/` |
+| BioRadio → game (kit version) | `bioradio_unity_bridge.py` from the BioRadio Student Unity Kit, with our CSV recording | `Tools/EmgBridge/kit_bridge/` |
+| BioRadio SDK | `BioRadioSDK.dll` from the kit's `Python_Bridge` folder | **not included** (vendor licence). See C2. |
+| Python packages | `pythonnet`, `matplotlib` | installed automatically by the `.bat` files |
+| Game settings | sensor settings in code defaults (`SensorSettings.cs`) + `Assets/Resources/SensorSettings.asset`; skier tuning in `Assets/Settings/SkierSettings.asset` | yes, committed exactly as used |
+
+**Settings used live** (change them in the Inspector; the asset files in the repo are what we played with):
+
+| Setting | Value | File |
+|---|---|---|
+| COP processing rate / low-pass | 200 Hz / 4 Hz 2nd-order Butterworth | `SensorSettings.cs` |
+| Steer dead zone / full scale / curve | 1.0 cm / 12 cm / 1.0 (linear) | `SensorSettings.cs` |
+| Live COP file | `Tools/WiiBoard/WiiMote1_All.txt` (or the newest one in `Desktop\Balance Board\Balance Board`) | `SensorSettings.cs` |
+| EMG band-pass / envelope | 20–450 Hz 4th-order Butterworth, rectify, 5 Hz low-pass | `SensorSettings.cs` (applied in `EmgProcessor.cs`), see `SENSORS.md` |
+| EMG channels | Ch1 = forearm → jump, Ch2 = biceps → backflip | `SensorSettings` → Bridge Jump / Backflip Channel |
+| Steer mode | `TurnRate` (turn rate 65°/s). `LeanSetsHeading` is the alternative. | `Assets/Settings/SkierSettings.asset` |
+| Speeds | start 14 m/s, min 8 m/s, max 22.22 m/s (80 km/h) | `Assets/Settings/SkierSettings.asset` |
+
+The EMG calibration from **F4** is stored per laptop in Unity PlayerPrefs, not in the repo. Every new laptop or player needs one F4 run (16 s).
+
+### Recordings
+
+| File | What |
+|---|---|
+| `Recordings/EMG/<name>/*.csv` | raw BioRadio EMG of each member (`sample,time_s,ch1_mv,ch2_mv`, 1000 Hz). `john`, `aman`, `vignesh` = calibration recordings. `prakash` = live session recording. The `.json` next to each file holds device, rate and units. |
+| `Recordings/COP/John14.txt` | Wii Balance Board Recorder file (5 Hz) used for the COP filter analysis |
+| `Assets/StreamingAssets/john_final.csv`, `John14.txt` | the copies the game replays with **F6** |
+
+To replay another member's EMG, use one of these:
+- In the game: `SensorSettings` → **Emg Source = Replay**, **Emg Replay File = `Recordings/EMG/aman/aman_final.csv`**.
+- Through the real UDP path:
+  ```bat
+  cd Tools\EmgBridge
+  py ski_emg_bridge.py --replay "..\..\Recordings\EMG\aman\aman_final.csv"
+  ```
+  `cd` changes into the bridge folder. `py` runs Python. `--replay <file>` streams that CSV at real speed to UDP port 50557, instead of reading a BioRadio.
+
+### What is where
+
+| Path | What |
+|---|---|
+| `Assets/Scenes/SkiGame.unity` | the game scene |
+| `Assets/Scripts/Input/Sensors/` | live sensor input: COP and EMG filters, UDP bridge receiver, file tailer, debug HUD |
+| `Assets/Scripts/Input/Biosignal/` | EMG filter blocks (biquads, detector) and recording replay |
+| `Assets/Resources/SensorSettings.asset` | all sensor settings (sources, files, filters, thresholds) |
+| `Assets/Settings/*.asset` | gameplay tuning (skier, slope, difficulty, spawns, visuals) |
+| `Assets/StreamingAssets/` | recordings used by REPLAY (`john_final.csv` EMG, `John14.txt` COP) |
+| `Recordings/` | all team EMG recordings + the COP recording |
+| `Tools/WiiBoard/` | board tools: `start_board.bat`, `wiiuse.exe` (+ DLLs), `WiiBalanceWalker.exe` for pairing |
+| `Tools/EmgBridge/` | BioRadio → game bridge: `run_bridge.bat`, `ski_emg_bridge.py`, replay test, `kit_bridge/` (the kit's bridge) |
+| `Tools/SignalAnalysis/`, `Tools/emg_analysis.py` | offline filter analysis scripts used for the report |
+| `Tools/save_to_github.bat` | add + commit + push the current branch in one double-click |
+| `SENSORS.md` / `CONTROLS.md` | filter design and signal analysis / control mapping and timing |
 
 ---
 
+> **Sensor control (EMG + Wii Balance Board):** see [SENSORS.md](SENSORS.md) for the filters, the signal analysis and how to switch between replay and live input.
+>
 > **Controls reference:** see [CONTROLS.md](CONTROLS.md) for steering math, all timing/delay values, and how EMG and the Wii Balance Board map onto the controls.
 
 ## 1. How to open, run and play
 
 ### Open
 1. Open **Unity Hub** → **Add** → **Add project from disk** → choose the folder
-   `D:\SSRP Game project`.
+   `downhill-rush` folder you cloned.
 2. Open it with **Unity 6000.6.8f1** (Unity 6.6). Unity 2022.3 LTS also works.
 3. On the first open the project **sets itself up automatically**: it creates
    `Assets/Settings/*.asset` and builds `Assets/Scenes/SkiGame.unity` with everything wired.
@@ -310,6 +460,36 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
 ---
 
 ## Changelog
+
+### v5.1: final version on `main`
+* **Live board tools in the repo:** `Tools/WiiBoard/` holds `wiiuse.exe` (+ DLLs), `WiiBalanceWalker.exe` for pairing, and `start_board.bat`.
+  The game reads `Tools/WiiBoard/WiiMote1_All.txt` by default and falls back to the newest `WiiMote1_All.txt` in the usual `Balance Board` desktop folders.
+* **Steering:** new `Steer Mode` in `SkierSettings`: `LeanSetsHeading` (lean = direction, centre = straight) or `TurnRate` (lean = turning speed).
+  COP steering is more responsive: 200 Hz processing, 4 Hz low-pass, 1 cm dead zone, 12 cm full scale, linear response.
+* **EMG bridge:** Start/Stop Recording button (CSV + info JSON). `run_bridge.bat` installs `pythonnet` and `matplotlib` on the first run.
+* `Tools/save_to_github.bat` (add, commit and push in one click). README: complete setup and live-play instructions.
+* Added everything else used live: the kit's EMG bridge (`Tools/EmgBridge/kit_bridge/`) and all team EMG recordings plus the COP recording (`Recordings/`).
+
+### v5.0: final EMG + balance-board game
+* Merged John's v4.0: his EMG demo input, recordings in `StreamingAssets`, and the 80 km/h speed cap.
+* **Live EMG** from the BioRadio through `Tools/EmgBridge/ski_emg_bridge.py`, over UDP 50557.
+  * It is based on the kit's bridge, but streams every sample.
+  * The kit's original bridge also works.
+* **EMG filters:**
+  * 20–450 Hz Butterworth band-pass, 50 Hz notch, rectify, then a 5 Hz envelope (John's envelope cut-off).
+  * Per-muscle thresholds: jump 0.15 / 0.08, backflip 0.40 / 0.10.
+  * On the recording: jump 63/63 detected with 0 false, 29 ms after the contraction starts; backflip 57/57 with 0 false.
+* **COP filters** (v4.0 had none, only the keyboard):
+  * weight gate and glitch rejection;
+  * 3 Hz Butterworth low-pass;
+  * neutral calibration and dead zones.
+  * The live `WiiMote1_All.txt` is followed read-only.
+* Guided EMG calibration (**F4**), saved per computer. "Stand still" centring for the board.
+* Always-on status bar. **F6** switches LIVE ↔ REPLAY. Self-test modes check the live paths without hardware.
+
+### v3.0 / v4.0
+* v3.0: steering tuned to 80 °/s, with 0.861 air steer. Added `CONTROLS.md`.
+* v4.0 (John): EMG demo input (keys trigger real recorded contractions through the filters) and an 80 km/h cap.
 
 ### v2.0
 * **Gradual steering:** the steer input sets the turn *rate* (`SkierSettings.steerTurnRate`,

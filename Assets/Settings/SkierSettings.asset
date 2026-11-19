@@ -14,16 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkiGame.SkierSettings
   startSpeed: 14
   minSpeed: 8
-  maxSpeed: 34
+  maxSpeed: 22.22
   downhillAcceleration: 1.6
   boostAcceleration: 8
   brakeDeceleration: 14
   carveDrag: 1.5
   airAccelerationFactor: 0.3
   maxHeadingAngle: 60
-  steerTurnRate: 55
+  steerMode: 1
+  leanHeadingAngle: 35
+  headingFollowRate: 120
+  steerTurnRate: 65
   turnRate: 170
-  airSteerFactor: 0.5
+  airSteerFactor: 0.861
   alignSharpness: 12
   bankFriction: 8
   bankPushTurnRate: 110

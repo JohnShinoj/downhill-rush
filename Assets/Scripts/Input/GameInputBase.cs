@@ -83,6 +83,16 @@ namespace SkiGame
             previousBackflipRequest = flipRequest;
         }
 
+        /// <summary>Lets a subclass (e.g. the sensor input) set its own smoothing and dead zones.</summary>
+        protected void ConfigureResponse(float steerResponse, float steerRelease, float speedResponse, float steerDz, float speedDz)
+        {
+            steerResponseTime = Mathf.Max(0f, steerResponse);
+            steerReleaseTime = Mathf.Max(0f, steerRelease);
+            speedResponseTime = Mathf.Max(0f, speedResponse);
+            steerDeadZone = Mathf.Clamp(steerDz, 0f, 0.9f);
+            speedDeadZone = Mathf.Clamp(speedDz, 0f, 0.9f);
+        }
+
         protected virtual void OnDisable()
         {
             Steer = SpeedControl = RawSteer = RawSpeedControl = 0f;

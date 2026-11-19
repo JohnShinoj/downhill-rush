@@ -210,17 +210,17 @@ namespace SkiGame
             float y = r.y + 200, x = r.x + 90;
             string[,] controls =
             {
-                { "A / D   or  Left / Right", "Steer" },
-                { "W / S   or  Up / Down", "Speed up / slow down" },
-                { "Space", "Jump" },
-                { "F  (in the air)", "Backflip - land it for x2 coins!" },
-                { "Esc", "Pause" },
-                { "F1", "Input debug overlay" },
+                { "Lean left / right   (A / D)", "Steer" },
+                { "Lean forward / back   (W / S)", "Speed up / slow down" },
+                { "Squeeze forearm   (Space)", "Jump" },
+                { "Curl biceps in the air   (F)", "Backflip - land it for x2 coins!" },
+                { "F4  /  F3", "Calibrate EMG / centre" },
+                { "Esc  ·  F2", "Pause  ·  sensor panel" },
             };
             for (int i = 0; i < controls.GetLength(0); i++)
             {
-                HudDrawing.Label(new Rect(x, y, 360, 36), $"<b>{controls[i, 0]}</b>", label);
-                HudDrawing.Label(new Rect(x + 370, y, 400, 36), controls[i, 1], label);
+                HudDrawing.Label(new Rect(x - 40, y, 420, 36), $"<b>{controls[i, 0]}</b>", label);
+                HudDrawing.Label(new Rect(x + 390, y, 420, 36), controls[i, 1], label);
                 y += 40;
             }
 

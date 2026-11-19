@@ -230,6 +230,13 @@ namespace SkiGame
                 // After a crash the skier is straightened out along the track.
                 yaw = Mathf.MoveTowards(yaw, pathYaw, settings.turnRate * dt);
             }
+            else if (settings.steerMode == SteerMode.LeanSetsHeading)
+            {
+                // LEAN SETS THE DIRECTION: lean right -> angle right of the track; back to centre -> straight
+                // along the track again. Nothing builds up while you hold a lean, so there is no over-steer.
+                float target = pathYaw + steerValue * settings.leanHeadingAngle;
+                yaw = Mathf.MoveTowards(yaw, target, settings.headingFollowRate * authority * dt);
+            }
             else
             {
                 // GRADUAL STEERING: input sets the TURN RATE, not the heading.
