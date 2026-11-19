@@ -1,0 +1,18 @@
+{
+  "device": "BioRadio AOO",
+  "mac": "ECFE7E1836BF",
+  "sample_rate_hz": 1000.0,
+  "channel_names": [
+    "Ch1",
+    "Ch2"
+  ],
+  "sdk_units": [
+    "V",
+    "V"
+  ],
+  "to_mv_factor": 1000.0,
+  "started": "2026-10-31T18:08:43",
+  "stopped": "2026-10-31T18:10:59",
+  "samples": 135640,
+  "duration_s": 135.64
+}

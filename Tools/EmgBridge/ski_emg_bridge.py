@@ -11,16 +11,22 @@ Scan -> choose device -> Connect), with two changes for the game:
      so the kit's BioRadioUdpMover.cs keeps working too.
   2. Data is sent every 20 ms (50 times/s) and the plot is redrawn separately every 200 ms,
      so drawing never delays the game.
+  3. Start Recording / Stop Recording saves the EMG to CSV while it streams to the game
+     (same format as the kit: sample,time_s,ch1_mv,ch2_mv + an _info.json), so ONE window
+     both plays the game and records. Recordings go to the kit's recordings folder
+     (or --rec-dir).
 
 Usage (Windows PowerShell, in this folder):
     py ski_emg_bridge.py                       # live BioRadio (needs BioRadioSDK.dll, see --sdk)
     py ski_emg_bridge.py --sdk "C:\\path\\to\\Python_Bridge\\BioRadioSDK.dll"
+    py ski_emg_bridge.py --rec-dir "D:\\my_recordings"  # save recordings somewhere else
     py ski_emg_bridge.py --replay ..\\..\\Assets\\StreamingAssets\\john_final.csv   # no hardware: stream a recording
 
 Needs:  py -m pip install pythonnet matplotlib      (pythonnet only for live mode)
 The SDK DLL is NOT included here (vendor licence) - it is found automatically in the kit folder.
 """
-import argparse, json, math, os, socket, sys, time
+import argparse, csv, json, math, os, socket, sys, time
+from datetime import datetime
 from collections import deque
 
 UDP_HOST, UDP_PORT = "127.0.0.1", 50557
@@ -32,6 +38,11 @@ TO_MV = 1000.0        # SDK scaled values are volts -> mV (as in the kit; verify
 DEFAULT_SDK_PATHS = [
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "BioRadioSDK.dll"),
     os.path.expandvars(r"%USERPROFILE%\Downloads\BioRadio_Student_Unity_Kit\BioRadio_Student_Unity_Kit\Python_Bridge\BioRadioSDK.dll"),
+]
+
+# Recordings: the kit's recordings folder if it exists (where the earlier recordings are), else next to this script.
+DEFAULT_REC_DIRS = [
+    os.path.expandvars(r"%USERPROFILE%\Downloads\BioRadio_Student_Unity_Kit\BioRadio_Student_Unity_Kit\Python_Bridge\recordings"),
 ]
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -73,7 +84,7 @@ def run_replay(path, port, speed=1.0):
 
 
 # ------------------------------------------------------------------ live BioRadio (kit GUI)
-def run_live(sdk_path, port):
+def run_live(sdk_path, port, rec_dir):
     import tkinter as tk
     from tkinter import ttk, messagebox
     try:
@@ -92,17 +103,79 @@ def run_live(sdk_path, port):
     root.geometry("1000x740")
     manager = BioRadioDeviceManager()
     st = {"found": [], "device": None, "signals": [], "buffers": [], "totals": [], "fs": 1000.0, "running": False,
-          "lines": [], "msgs": 0, "t_rate": time.perf_counter()}
+          "lines": [], "msgs": 0, "t_rate": time.perf_counter(), "device_id": ("", "")}
+    # recording state (same logic as the kit's bioradio_unity_bridge.py)
+    rec = {"file": None, "writer": None, "pending": [], "start": 0, "rows": 0, "path": "", "info": {}}
 
     bar = ttk.Frame(root, padding=12); bar.pack(fill="x")
     ttk.Label(bar, text="Available BioRadio devices:").pack(side="left")
     selection = ttk.Combobox(bar, width=47, state="readonly"); selection.pack(side="left", padx=8)
     status = tk.StringVar(value="Click Scan to find BioRadio devices.  Ch1 = forearm (JUMP), Ch2 = biceps (BACKFLIP).")
     ttk.Label(root, textvariable=status, padding=8).pack(anchor="w")
+    rec_status = tk.StringVar(value="Not recording.  (Recordings are saved to %s)" % rec_dir)
+    ttk.Label(root, textvariable=rec_status, padding=(8, 0)).pack(anchor="w")
+    rec_text = tk.StringVar(value="Start Recording")
     fig = Figure(figsize=(10, 6), dpi=90)
     canvas = FigureCanvasTkAgg(fig, master=root); canvas.get_tk_widget().pack(fill="both", expand=True)
 
+    # ---------------- recording (ported from the kit's bioradio_unity_bridge.py) ----------------
+    def save_info():
+        with open(rec["path"][:-4] + "_info.json", "w") as f:
+            json.dump(rec["info"], f, indent=2)
+
+    def start_recording():
+        if st["device"] is None:
+            messagebox.showwarning("Not connected", "Connect to a BioRadio before recording."); return
+        now = datetime.now()
+        try:
+            os.makedirs(rec_dir, exist_ok=True)
+            base = os.path.join(rec_dir, "bioradio_%s_%s" % (now.strftime("%Y%m%d_%H%M%S"), st["device_id"][1]))
+            path, k = base + ".csv", 1
+            while os.path.exists(path):          # never overwrite an earlier recording
+                k += 1; path = "%s_%d.csv" % (base, k)
+            f = open(path, "w", newline="")
+        except OSError as exc:
+            messagebox.showerror("Recording failed", str(exc)); return
+        w = csv.writer(f)
+        w.writerow(["sample", "time_s"] + ["ch%d_mv" % (i + 1) for i in range(len(st["signals"]))])
+        rec.update(file=f, writer=w, path=path, rows=0,
+                   pending=[deque() for _ in st["signals"]],
+                   start=max(st["totals"]),       # channels can be a batch apart: start all on the same sample
+                   info={"device": st["device_id"][0], "mac": st["device_id"][1], "sample_rate_hz": st["fs"],
+                         "channel_names": [str(s.Name) for s in st["signals"]],
+                         "sdk_units": [str(s.Units) for s in st["signals"]],
+                         "to_mv_factor": TO_MV, "started": now.isoformat(timespec="seconds")})
+        save_info()
+        rec_text.set("Stop Recording")
+        rec_status.set("Recording to %s" % path)
+
+    def write_rows(final=False):
+        """One CSV row per sample index that every channel has; on final, pad the rest."""
+        lengths = [len(q) for q in rec["pending"]]
+        for _ in range(max(lengths) if final else min(lengths)):
+            values = ["%.6f" % q.popleft() if q else "" for q in rec["pending"]]
+            rec["writer"].writerow([rec["rows"], "%.6f" % (rec["rows"] / st["fs"])] + values)
+            rec["rows"] += 1
+        rec["file"].flush()
+
+    def stop_recording():
+        if rec["file"] is None: return
+        try: write_rows(final=True)
+        except Exception as e: print("Recording flush:", repr(e))
+        rec["file"].close()
+        rec.update(file=None, writer=None)
+        rec["info"].update(stopped=datetime.now().isoformat(timespec="seconds"),
+                           samples=rec["rows"], duration_s=rec["rows"] / st["fs"])
+        save_info()
+        rec_text.set("Start Recording")
+        rec_status.set("Saved %d samples (%.1f s) to %s" % (rec["rows"], rec["rows"] / st["fs"], rec["path"]))
+
+    def toggle_recording():
+        if rec["file"] is None: start_recording()
+        else: stop_recording()
+
     def disconnect():
+        stop_recording()                         # never lose a recording on disconnect
         st["running"] = False
         d = st["device"]
         if d is not None:
@@ -143,6 +216,7 @@ def run_live(sdk_path, port):
             if n < 1: raise RuntimeError("No enabled biopotential channels. Configure in BioCapture.")
             fs = float(group.SamplesPerSecond)
             if fs <= 0: raise RuntimeError("Invalid sampling frequency")
+            st["device_id"] = (name, mac)
             st.update(fs=fs, signals=[group[i] for i in range(n)],
                       buffers=[deque(maxlen=max(10, int(fs * WINDOW_SECONDS))) for _ in range(n)], totals=[0] * n)
             candidate.StartAcquisition()
@@ -172,10 +246,15 @@ def run_live(sdk_path, port):
                 batch = sig.GetScaledValueArray()
                 vals = [float(x) * TO_MV for x in batch] if batch is not None else []
                 if vals:
+                    if rec["file"] is not None:      # recording: keep only samples from the start index on
+                        rec["pending"][i].extend(vals[max(0, rec["start"] - st["totals"][i]):])
                     st["buffers"][i].extend(vals)
                     st["totals"][i] += len(vals)
                     send_channel(i + 1, vals, st["totals"][i], st["fs"], port)
                     st["msgs"] += 1
+            if rec["file"] is not None:
+                write_rows()
+                rec_status.set("Recording %.1f s -> %s" % (rec["rows"] / st["fs"], os.path.basename(rec["path"])))
         except Exception as exc:
             status.set("Read error: %r" % exc); print("Read error:", repr(exc))
         if st["running"]: root.after(SEND_MS, pump)
@@ -205,6 +284,7 @@ def run_live(sdk_path, port):
 
     for label, cb in [("Scan", scan), ("Connect", connect), ("Disconnect", disconnect)]:
         ttk.Button(bar, text=label, command=cb).pack(side="left", padx=3)
+    ttk.Button(bar, textvariable=rec_text, command=toggle_recording).pack(side="left", padx=3)
     root.protocol("WM_DELETE_WINDOW", close)
     root.mainloop()
 
@@ -213,6 +293,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--sdk", help="path to BioRadioSDK.dll")
     ap.add_argument("--port", type=int, default=UDP_PORT)
+    ap.add_argument("--rec-dir", help="folder for recordings (default: the kit's recordings folder, else ./recordings)")
     ap.add_argument("--replay", help="stream a recorded CSV (sample,time_s,ch1_mv,ch2_mv) instead of the BioRadio")
     a = ap.parse_args()
     if a.replay:
@@ -222,5 +303,8 @@ if __name__ == "__main__":
     sdk = a.sdk or next((p for p in DEFAULT_SDK_PATHS if os.path.exists(p)), None)
     if not sdk or not os.path.exists(sdk):
         sys.exit("BioRadioSDK.dll not found. Pass it with --sdk \"...\\Python_Bridge\\BioRadioSDK.dll\"")
+    rec_dir = a.rec_dir or next((d for d in DEFAULT_REC_DIRS if os.path.isdir(d)),
+                                os.path.join(os.path.dirname(os.path.abspath(__file__)), "recordings"))
     print("Using SDK:", sdk)
-    run_live(sdk, a.port)
+    print("Recordings will be saved to:", rec_dir)
+    run_live(sdk, a.port, rec_dir)

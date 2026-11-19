@@ -167,7 +167,7 @@ namespace SkiGame.Sensors
                     }
                     break;
                 case SignalSource.LiveFile:
-                    string live = SensorSettings.Resolve(Settings.copLiveFile);
+                    string live = Settings.ResolveCopLiveFile();
                     if (Settings.copLiveSelfTest)
                     {
                         try

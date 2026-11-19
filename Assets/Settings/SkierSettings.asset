@@ -21,7 +21,10 @@ MonoBehaviour:
   carveDrag: 1.5
   airAccelerationFactor: 0.3
   maxHeadingAngle: 60
-  steerTurnRate: 80
+  steerMode: 1
+  leanHeadingAngle: 35
+  headingFollowRate: 120
+  steerTurnRate: 65
   turnRate: 170
   airSteerFactor: 0.861
   alignSharpness: 12

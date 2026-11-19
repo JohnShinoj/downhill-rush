@@ -2,6 +2,15 @@ using UnityEngine;
 
 namespace SkiGame
 {
+    /// <summary>How the steering input turns the skier.</summary>
+    public enum SteerMode
+    {
+        /// <summary>Lean sets the DIRECTION: lean right = angled right, back to centre = straight along the track again.</summary>
+        LeanSetsHeading,
+        /// <summary>Lean sets the TURN SPEED: hold right = keep turning right; to straighten, lean the other way.</summary>
+        TurnRate
+    }
+
     /// <summary>
     /// All tunable numbers for the skier's movement, jump, backflip, crash handling and
     /// the input-delay assists. Create via Assets > Create > Ski Game > Skier Settings.
@@ -27,7 +36,13 @@ namespace SkiGame
         [Header("Steering")]
         [Tooltip("Maximum heading away from straight downhill (degrees). Keeps the skier from going sideways/uphill.")]
         [Range(10f, 85f)] public float maxHeadingAngle = 60f;
-        [Tooltip("How fast the skier turns while steering is held at full (degrees / second). Lower = less sensitive.")]
+        [Tooltip("LeanSetsHeading: lean = direction, centre = straight again (easier with the balance board). TurnRate: lean = turning speed (the old behaviour).")]
+        public SteerMode steerMode = SteerMode.LeanSetsHeading;
+        [Tooltip("LeanSetsHeading: angle away from the track at FULL lean (degrees). Bigger = sharper turns.")]
+        [Range(5f, 60f)] public float leanHeadingAngle = 35f;
+        [Tooltip("LeanSetsHeading: how fast the skier swings to the new direction / back to straight (degrees / second).")]
+        public float headingFollowRate = 120f;
+        [Tooltip("TurnRate mode: how fast the skier turns while steering is held at full (degrees / second). Lower = less sensitive.")]
         public float steerTurnRate = 55f;
         [Tooltip("How fast the heading recovers after a crash (degrees / second).")]
         public float turnRate = 170f;

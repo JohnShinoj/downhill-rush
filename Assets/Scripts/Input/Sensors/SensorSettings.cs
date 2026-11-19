@@ -34,8 +34,35 @@ namespace SkiGame.Sensors
         public SignalSource copSource = SignalSource.LiveFile;
         [Tooltip("Recorded file from the Wii Balance Board Recorder (Time, CpX, CpY, ... Weight). Relative paths start at the project folder.")]
         public string copReplayFile = "Assets/StreamingAssets/John14.txt";
-        [Tooltip("The live file written by the board software. Opened READ-ONLY; it is never changed.")]
-        public string copLiveFile = @"C:\Users\praka\OneDrive\Desktop\Balance Board\Balance Board\WiiMote1_All.txt";
+        [Tooltip("The live file written by the board software (wiiuse.exe). Opened READ-ONLY; it is never changed. Default: Tools/WiiBoard/WiiMote1_All.txt, written by Tools/WiiBoard/start_board.bat. If that file is missing, the game also looks in the usual 'Balance Board' desktop folders and uses whichever file was written most recently. %USERPROFILE% = the current Windows user's folder.")]
+        public string copLiveFile = "Tools/WiiBoard/WiiMote1_All.txt";
+
+        /// <summary>Other places wiiuse.exe is often run from. Used only when they hold a NEWER file than <see cref="copLiveFile"/>.</summary>
+        public static readonly string[] CopLiveFallbacks =
+        {
+            "Tools/WiiBoard/WiiMote1_All.txt",
+            @"%USERPROFILE%\OneDrive\Desktop\Balance Board\Balance Board\WiiMote1_All.txt",
+            @"%USERPROFILE%\Desktop\Balance Board\Balance Board\WiiMote1_All.txt",
+        };
+
+        /// <summary>
+        /// The live board file to read: of <see cref="copLiveFile"/> and <see cref="CopLiveFallbacks"/>,
+        /// the existing one that was written most recently (= the one wiiuse.exe is writing now).
+        /// If none exists yet, <see cref="copLiveFile"/> (the game waits until it appears).
+        /// </summary>
+        public string ResolveCopLiveFile()
+        {
+            string chosen = Resolve(copLiveFile);
+            System.DateTime newest = System.IO.File.Exists(chosen) ? System.IO.File.GetLastWriteTimeUtc(chosen) : System.DateTime.MinValue;
+            foreach (string candidate in CopLiveFallbacks)
+            {
+                string full = Resolve(candidate);
+                if (!System.IO.File.Exists(full)) continue;
+                System.DateTime t = System.IO.File.GetLastWriteTimeUtc(full);
+                if (t > newest) { newest = t; chosen = full; }
+            }
+            return chosen;
+        }
 
         [Header("COP - live file columns (0-based, whitespace separated)")]
         [Tooltip("Column with COP X (medio-lateral). WiiMote1_All.txt: column 4 (same as the professor's script).")]
@@ -55,9 +82,9 @@ namespace SkiGame.Sensors
 
         [Header("COP - filtering (see SENSORS.md)")]
         [Tooltip("Internal processing rate (Hz). Input samples are held / interpolated onto this clock.")]
-        public float copProcessRate = 100f;
+        public float copProcessRate = 200f;   // above the ~85 Hz the board writes, so EVERY new board sample is used (was 100)
         [Tooltip("2nd-order Butterworth low-pass cut-off (Hz). Voluntary leans are < ~2 Hz; sway jitter and sensor noise are above.")]
-        public float copLowPassHz = 3f;
+        public float copLowPassHz = 4f;   // was 3: ~56 ms delay instead of ~75 ms; the 85 Hz live data is clean enough
         [Tooltip("A sample that jumps more than this (cm) from the previous one is treated as a glitch and ignored (max 3 in a row).")]
         public float copMaxJumpCm = 6f;
         [Tooltip("Below this total weight (kg) nobody is on the board: steering and speed go to 0.")]
@@ -69,11 +96,11 @@ namespace SkiGame.Sensors
         [Tooltip("Seconds of quiet standing averaged at the start to find the neutral (centre) position. F3 re-does it.")]
         public float copNeutralSeconds = 2f;
         [Tooltip("Lean (cm from your centre) that gives FULL steering. Bigger = less sensitive.")]
-        public float steerFullScaleCm = 15f;
+        public float steerFullScaleCm = 12f;   // was 15: full turn with a normal (not maximal) lean
         [Tooltip("Leans smaller than this (cm) do not steer at all - standing sway and small weight shifts are ignored.")]
-        public float steerDeadZoneCm = 1.5f;
-        [Tooltip("Response curve. 1 = linear. Higher = gentler for small leans, still full turn for a big lean (1.7: half lean -> ~30% turn).")]
-        [Range(1f, 3f)] public float steerCurve = 1.7f;
+        public float steerDeadZoneCm = 1.0f;   // was 1.5: turning starts with a smaller lean
+        [Tooltip("Response curve. 1 = linear. Higher = gentler for small leans, still full turn for a big lean. 1 = linear: steering starts as soon as you leave the dead zone and grows evenly.")]
+        [Range(1f, 3f)] public float steerCurve = 1.0f;   // was 1.7: small leans did almost nothing, big leans over-steered
         [Tooltip("Lean (cm from neutral) that gives full boost / full brake. Forward-back leans reach ~7 cm.")]
         public float speedFullScaleCm = 6f;
         [Tooltip("Use forward / back lean for speed (forward = faster, back = brake).")]
@@ -158,6 +185,7 @@ namespace SkiGame.Sensors
         public static string Resolve(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return "";
+            path = System.Environment.ExpandEnvironmentVariables(path);   // %USERPROFILE% -> C:\Users\<name>
             if (System.IO.Path.IsPathRooted(path)) return path;
             string root = System.IO.Path.GetDirectoryName(Application.dataPath);
             string full = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, path));
