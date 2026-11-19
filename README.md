@@ -81,7 +81,75 @@ Do these steps in order. Start each program **before** pressing Play.
    **squeeze your forearm** to jump, **curl your biceps** in the air to backflip.
 5. **F2** opens the sensor panel: live COP, EMG envelopes and thresholds, and a scrolling plot.
 
-### D. If something doesn't work
+### E. Play it as a normal PC game (`.exe`, no Unity needed)
+
+Unity is only needed once, to **build** the game. After that anyone can play by double-clicking an `.exe`,
+including live with the sensors.
+
+**E1 – Build the `.exe` (once, or again after any change)**
+1. Open the project in Unity (step A).
+2. **File → Build Profiles** → select **Windows** on the left. If it is greyed out, click
+   **Install with Unity Hub** to add *Windows Build Support*.
+3. Check that **Scene List** shows `Assets/Scenes/SkiGame.unity` with a tick.
+4. Click **Build**. Make a new empty folder, e.g. `downhill-rush\Build`, and select it. This takes 1–3 minutes.
+5. The folder now contains **`SSRP Game project.exe`**, `SSRP Game project_Data\`, `UnityPlayer.dll` and more.
+   **Keep all of these together.** The `.exe` won't run on its own. To give the game to someone, zip the whole folder.
+6. **For live board input:** copy the whole `Tools\WiiBoard` folder into the build folder, so you get
+   `Build\Tools\WiiBoard\start_board.bat`. The `.exe` reads the board file from `Tools\WiiBoard` next to itself.
+   (Or run `wiiuse.exe` from `Desktop\Balance Board\Balance Board`, because the game also looks there.)
+
+`Build/` is git-ignored, so the build is never uploaded. Build again on each laptop, or share the zip.
+
+**E2 – Play the `.exe` with keyboard / recordings**
+- Double-click **`SSRP Game project.exe`**. It opens full-screen. Press **Alt+Enter** to switch to windowed mode.
+- Same keys as in Unity: **Enter** start, **A/D** steer, **W/S** speed, **Space** jump, **F** backflip,
+  **Esc/P** pause, **R** restart, **M** menu. Close with **Alt+F4**.
+- **F6** switches to **REPLAY** (the recordings are built into the `.exe`).
+
+**E3 – Play the `.exe` LIVE with the sensors**. This is the same order as in Unity:
+1. Board: `Build\Tools\WiiBoard\start_board.bat` (pair first with `WiiBalanceWalker.exe` if this laptop is new, see C1).
+2. EMG: `Tools\EmgBridge\run_bridge.bat` from the repo → **Scan → Connect**.
+3. Start **`SSRP Game project.exe`**. If Windows Firewall asks about it, click **Allow** (the EMG arrives over a local network port).
+4. Press **Alt+Enter** for windowed mode if you want to watch the bridge window too. The game keeps running
+   when you click another window (*Run In Background* is on).
+5. The bottom-left status bar must show **LIVE · EMG ● bridge · COP ● board**, both green.
+6. Stand still on the board for **2 s** (centre). Press **F4** and follow the prompts (EMG calibration, about 16 s).
+   The `.exe` stores its own calibration, separate from the Unity editor, so do F4 once in the `.exe` too.
+7. Press **Enter** and play. **F2** shows the live sensor panel.
+
+---
+
+### F. Every key and how live control works
+
+| Key | In the menu / game |
+|---|---|
+| **Enter** | start the run (menu) / restart (game over) |
+| **A / D**, **← / →** | steer (also works in LIVE mode as a backup) |
+| **W / S**, **↑ / ↓** | speed up / slow down (backup in LIVE) |
+| **Space** | jump (backup in LIVE) |
+| **F** | backflip while airborne (backup in LIVE) |
+| **Esc / P** | pause / resume |
+| **R / M** | restart / main menu (from pause or game over) |
+| **F1** | input debug HUD (Steer, Speed, Jump, Backflip values) |
+| **F2** | sensor panel: live COP dot, EMG envelopes with ON/OFF thresholds, scrolling plot |
+| **F3** | re-measure your standing centre on the board (stand still for 2 s) |
+| **F4** | EMG calibration: relax → squeeze forearm → curl biceps, following the on-screen prompts |
+| **F6** | switch **LIVE ↔ REPLAY** |
+| **Alt+Enter** | full-screen ↔ window (`.exe` only) |
+
+**What your body does in LIVE mode**
+
+| Body | Game | Signal path |
+|---|---|---|
+| Lean **left / right** on the board | steer | COP x → 4 Hz low-pass → dead zone 1 cm → full turn at 12 cm |
+| Lean **forward / back** | faster / slower | COP y, same filter |
+| **Squeeze forearm** (Ch1) | jump | EMG 20–450 Hz band-pass → rectify → 5 Hz envelope → threshold, 0.6 s refractory |
+| **Curl biceps** (Ch2) while in the air | backflip | same EMG chain on Ch2 |
+
+Tips: keep the arm relaxed between flexes, because one clear squeeze gives one jump. Step off and on again, then press **F3**,
+if steering drifts. The detection delay is about 50–70 ms, so flex slightly before an obstacle.
+
+### G. If something doesn't work
 
 | Symptom | Fix |
 |---|---|
@@ -93,6 +161,10 @@ Do these steps in order. Start each program **before** pressing Play.
 | `EMG ●` red | The bridge window is closed or not connected. Or `BioRadioSDK.dll` wasn't found: the bridge prints where it looked. |
 | Jumps fire on their own / never fire | Press **F4** to calibrate again, and check the electrode placement. |
 | Test the live paths without hardware | `Tools/EmgBridge/run_bridge_replay_test.bat` streams the recorded EMG through UDP. `SensorSettings` → **Cop Live Self Test** does the same for the board. |
+| `.exe`: COP red | `Tools\WiiBoard` wasn't copied next to the `.exe` (E1.6), or `start_board.bat` was run from somewhere else. |
+| `.exe`: EMG red | The bridge isn't connected, or Windows Firewall blocked the game. Allow it in *Windows Security → Firewall → Allow an app*. |
+| `.exe` won't start / "missing UnityPlayer.dll" | It was copied without its folder. Keep the whole build folder together. |
+| `.exe` game freezes when another window is clicked | Old build: build again (Run In Background is now on). |
 | Speed limit | `Assets/Settings/SkierSettings` → **Max Speed** in m/s (km/h = m/s × 3.6). |
 
 ### Exactly what we used in the last live session
@@ -153,6 +225,7 @@ To replay another member's EMG, use one of these:
 | `Tools/EmgBridge/` | BioRadio → game bridge: `run_bridge.bat`, `ski_emg_bridge.py`, replay test, `kit_bridge/` (the kit's bridge) |
 | `Tools/SignalAnalysis/`, `Tools/emg_analysis.py` | offline filter analysis scripts used for the report |
 | `Tools/save_to_github.bat` | add + commit + push the current branch in one double-click |
+| `Build/` (you create it, git-ignored) | the `.exe` build from step E |
 | `SENSORS.md` / `CONTROLS.md` | filter design and signal analysis / control mapping and timing |
 
 ---
@@ -468,6 +541,7 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
   COP steering is more responsive: 200 Hz processing, 4 Hz low-pass, 1 cm dead zone, 12 cm full scale, linear response.
 * **EMG bridge:** Start/Stop Recording button (CSV + info JSON). `run_bridge.bat` installs `pythonnet` and `matplotlib` on the first run.
 * `Tools/save_to_github.bat` (add, commit and push in one click). README: complete setup and live-play instructions.
+* README section E: build and play as a normal Windows `.exe` (keyboard, replay and live). Section F: every key and the body → game mapping. *Run In Background* turned on so the game keeps running while you use the bridge window.
 * Added everything else used live: the kit's EMG bridge (`Tools/EmgBridge/kit_bridge/`) and all team EMG recordings plus the COP recording (`Recordings/`).
 
 ### v5.0: final EMG + balance-board game
