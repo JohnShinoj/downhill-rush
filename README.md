@@ -24,6 +24,22 @@ keyboard, replay the recordings, and play it **live** with the BioRadio EMG and 
 Board is in this repository. The only exception is the BioRadio SDK (`BioRadioSDK.dll`), which is
 vendor-licensed. See step C2.
 
+### Requirements (read first)
+
+| | |
+|---|---|
+| **Operating system** | **Windows 10 or 11 (64-bit) only.** The board tools (`wiiuse.exe`, `WiiBalanceWalker.exe`), the BioRadio SDK and the `.bat` launchers are Windows-only. On macOS/Linux only keyboard play inside Unity works, with no live sensors. |
+| **Unity** | **6000.6.8f1** exactly (install it from Unity Hub → Archive). Other versions may re-import or show errors. |
+| **Bluetooth** | needed for the Wii Balance Board and the BioRadio |
+| **Python 3** (64-bit, `py` launcher) | needed only for live EMG. `pythonnet` and `matplotlib` are installed automatically by the `.bat`. |
+| **Not in this repo** | `BioRadioSDK.dll` (vendor licence), from the BioRadio Student Unity Kit. Needed only for live EMG. See C2. |
+| **Hardware for live play** | Wii Balance Board, BioRadio with 2 EMG channels (Ch1 forearm, Ch2 biceps) and electrodes |
+
+What works with what:
+- **Keyboard + replay:** Windows PC + Unity only.
+- **Live board steering:** add a Wii Balance Board.
+- **Live jump/backflip:** add a BioRadio + `BioRadioSDK.dll` + Python.
+
 ### What you need on the laptop
 
 | Need | For | Where to get it |
