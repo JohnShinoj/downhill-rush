@@ -1,6 +1,6 @@
 # Downhill Rush: how the controls work
 
-This is the reference for how player input becomes movement in the game, version v2.0. It covers:
+This is the reference for how player input becomes movement in the game (the final game on `main`). It covers:
 
 - every timing value, delay and threshold in the pipeline;
 - the steering, speed, jump and backflip math;
@@ -47,7 +47,7 @@ At 60 FPS one frame is about **16.7 ms**. The game adds no frame of delay of its
 
 ---
 
-## 3. Steering (v2: gradual turn that keeps its heading)
+## 3. Steering (gradual turn that keeps its heading)
 
 ### 3.1 The input stage: `GameInputBase`
 
@@ -255,7 +255,7 @@ Watch for **crosstalk**: a hard grip can also activate the biceps, which would t
  → if the total weight is under about 20 kg (stepped off), send 0
 ```
 
-### 8.3 What a lean does in v2
+### 8.3 What a lean does
 
 Steering is a **turn rate**, so:
 

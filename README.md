@@ -4,9 +4,17 @@ A complete, endless downhill skiing prototype built **only from Unity primitives
 code-generated meshes/materials** (no external assets). Steer down a winding slope, dodge
 obstacles, jump logs and crevasses, launch off ramps, do backflips for **x2 coins**.
 
-**v5: played with the body.** Squeeze the forearm to jump and curl the biceps to backflip
+**Played with the body.** Squeeze the forearm to jump and curl the biceps to backflip
 (BioRadio **EMG**). Lean on a **Wii Balance Board** to steer and change speed (centre of pressure).
 The keyboard still works for testing.
+
+> ### ⬇ Download the game from the `main` branch
+> **The complete, final game is on `main`, the default branch. You don't need any other branch.**
+> * **Easiest:** on the GitHub page click **Code → Download ZIP** and unzip it. This downloads `main`.
+> * **With Git:** `git clone https://github.com/JohnShinoj/downhill-rush.git` (this also gets `main`).
+>
+> Any other branches in this repository are old work-in-progress copies kept only for history.
+> Ignore them. Everything from them is already inside `main`.
 
 ## ▶ Running the final version (start here)
 
@@ -30,8 +38,9 @@ vendor-licensed. See step C2.
 ```bat
 git clone https://github.com/JohnShinoj/downhill-rush.git
 cd downhill-rush
-git switch main
 ```
+`git clone <url>` downloads the repository into a new `downhill-rush` folder (the `main` branch).
+`cd downhill-rush` moves into that folder. (Or use **Code → Download ZIP** on GitHub and unzip it.)
 
 1. **Unity Hub → Add → Add project from disk** → choose the `downhill-rush` folder.
 2. Open it with **Unity 6000.6.8f1**. The first import takes a few minutes, because Unity rebuilds `Library/`.
@@ -532,9 +541,11 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
 
 ---
 
-## Changelog
+## Development history
 
-### v5.1: final version on `main`
+What was added, newest first. **All of it is in `main`.**
+
+### Final version: sensor tools, recordings and PC instructions
 * **Live board tools in the repo:** `Tools/WiiBoard/` holds `wiiuse.exe` (+ DLLs), `WiiBalanceWalker.exe` for pairing, and `start_board.bat`.
   The game reads `Tools/WiiBoard/WiiMote1_All.txt` by default and falls back to the newest `WiiMote1_All.txt` in the usual `Balance Board` desktop folders.
 * **Steering:** new `Steer Mode` in `SkierSettings`: `LeanSetsHeading` (lean = direction, centre = straight) or `TurnRate` (lean = turning speed).
@@ -544,8 +555,8 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
 * README section E: build and play as a normal Windows `.exe` (keyboard, replay and live). Section F: every key and the body → game mapping. *Run In Background* turned on so the game keeps running while you use the bridge window.
 * Added everything else used live: the kit's EMG bridge (`Tools/EmgBridge/kit_bridge/`) and all team EMG recordings plus the COP recording (`Recordings/`).
 
-### v5.0: final EMG + balance-board game
-* Merged John's v4.0: his EMG demo input, recordings in `StreamingAssets`, and the 80 km/h speed cap.
+### Live EMG + balance-board control
+* Includes John's EMG demo input, the recordings in `StreamingAssets`, and the 80 km/h speed cap.
 * **Live EMG** from the BioRadio through `Tools/EmgBridge/ski_emg_bridge.py`, over UDP 50557.
   * It is based on the kit's bridge, but streams every sample.
   * The kit's original bridge also works.
@@ -553,7 +564,7 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
   * 20–450 Hz Butterworth band-pass, 50 Hz notch, rectify, then a 5 Hz envelope (John's envelope cut-off).
   * Per-muscle thresholds: jump 0.15 / 0.08, backflip 0.40 / 0.10.
   * On the recording: jump 63/63 detected with 0 false, 29 ms after the contraction starts; backflip 57/57 with 0 false.
-* **COP filters** (v4.0 had none, only the keyboard):
+* **COP filters** (before this, steering was keyboard only):
   * weight gate and glitch rejection;
   * 3 Hz Butterworth low-pass;
   * neutral calibration and dead zones.
@@ -561,11 +572,11 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
 * Guided EMG calibration (**F4**), saved per computer. "Stand still" centring for the board.
 * Always-on status bar. **F6** switches LIVE ↔ REPLAY. Self-test modes check the live paths without hardware.
 
-### v3.0 / v4.0
-* v3.0: steering tuned to 80 °/s, with 0.861 air steer. Added `CONTROLS.md`.
-* v4.0 (John): EMG demo input (keys trigger real recorded contractions through the filters) and an 80 km/h cap.
+### Steering tuning and EMG demo
+* Steering tuned to 80 °/s, with 0.861 air steer. Added `CONTROLS.md`.
+* John: EMG demo input (keys trigger real recorded contractions through the filters) and an 80 km/h cap.
 
-### v2.0
+### Gradual steering and ramp fix
 * **Gradual steering:** the steer input sets the turn *rate* (`SkierSettings.steerTurnRate`,
   default 55 deg/s). Holding right keeps turning right; letting go keeps the current
   direction (no automatic track-following). The heading is limited to `maxHeadingAngle`
@@ -573,7 +584,7 @@ Colours of the primitive skier (jacket, helmet, goggles, skis, spray, …) are o
 * **Ramp jumps capped:** jumping on a ramp, or right after leaving one, adds only
   `rampJumpBonus` (3 m/s) on top of the ramp launch instead of a full extra jump.
 
-### v1.x
+### First prototype fixes
 * Ramps launch reliably at any frame rate (launch is frame-based; ground snap is capped).
 * Performance: decoration in each slope chunk is merged into a few meshes, GPU instancing,
   2 shadow cascades, 2x MSAA. In the editor, set the Game view to 1920x1080 for best FPS.

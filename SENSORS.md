@@ -9,7 +9,7 @@ How the game is controlled by the body instead of the keyboard:
 | Lean left / right | Wii Balance Board centre of pressure (COP), medio-lateral | **Steering** |
 | Lean forward / back | Wii Balance Board COP, antero-posterior | **Speed** (forward = faster, back = brake) |
 
-**v5.0 is the final, playable version.** EMG comes live from the BioRadio through the UDP bridge, and COP comes live from the board software's `WiiMote1_All.txt`. Both have replay modes for testing.
+**The `main` branch is the final, playable version.** EMG comes live from the BioRadio through the UDP bridge, and COP comes live from the board software's `WiiMote1_All.txt`. Both have replay modes for testing.
 
 This document covers which filters are used and why, the numbers from analysing the recordings, how replay and live mode work, and how to tune everything. All filters run **causally**: they only use past samples, exactly as in real time. The analysis therefore measures the delays the player will actually feel.
 
@@ -60,9 +60,9 @@ raw EMG (mV)
 
 All filters are IIR biquads designed with the bilinear transform (RBJ cookbook formulas), so cascading them gives exact Butterworth responses. See `emg_filters.png`.
 
-### 2.3 John's v4 filters vs. the final choice
+### 2.3 John's first filters vs. the final choice
 
-John's v4 used:
+John's first version (the EMG demo) used:
 - a 20–450 Hz band-pass, then rectification;
 - a **5 Hz** envelope;
 - absolute thresholds at 30 % / 12 % of the 20th–95th percentile range;
@@ -72,7 +72,7 @@ My first version used an 8 Hz envelope with thresholds of 0.30 / 0.40. All varia
 
 | Version | Jump: detected / false / delay* | Backflip: detected / false / delay* |
 |---|---|---|
-| John's v4 | 63/63 · 0 · 48 ms | 56/57 · **9 false** · fires on the small activity before each contraction |
+| John's first version | 63/63 · 0 · 48 ms | 56/57 · **9 false** · fires on the small activity before each contraction |
 | My first version (8 Hz envelope) | 63/63 · 0 · 88 ms | 57/57 · 2 false · 159 ms |
 | **Final: John's 5 Hz envelope + per-muscle thresholds** | **63/63 · 0 · 29 ms** | **57/57 · 0 false · 159 ms** |
 
